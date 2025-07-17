@@ -1,0 +1,55 @@
+{
+  "name": "arui",
+  "private": true,
+  "version": "0.0.1",
+  "description": "ARUI",
+  "displayName": "ARUI",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder build --win --publish never"
+  },
+  "keywords": [],
+  "author": "Kıraç Armağan Önal",
+  "license": "GPL-3.0-only",
+  "build": {
+    "appId": "rest.armagan.arui",
+    "copyright": "Copyright © 2025-2026 ARUI",
+    "productName": "ARUI",
+    "icon": "icon.png",
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "installerIcon": "icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "icon.png",
+      "icon.ico",
+      "index.js",
+      "package.json"
+    ]
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "chalk": "^5.3.0",
+    "compressing": "^1.10.3",
+    "electron-is-dev": "^2.0.0",
+    "json-stream": "^1.0.0",
+    "node-stream-zip": "^1.15.0",
+    "original-fs": "^1.2.0",
+    "stuffs": "^0.1.43"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "electron": "^34.0.2",
+    "electron-builder": "^26.0.1"
+  }
+}
