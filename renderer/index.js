@@ -3,6 +3,8 @@ const { app, BrowserWindow, ipcMain, dialog, screen } = electron;
 const path = require('path');
 const axios = require("axios");
 const isDev = require('electron-is-dev');
+const cp = require('child_process');
+const JSONStream = require('json-stream');
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
@@ -80,16 +82,62 @@ async function createApp() {
 
   mainWindow.webContents.openDevTools({ mode: 'detach' });
 
-  ipcMain.on("BroadcastMessage", (event, ...args) => {
+  function broadcastMessage(...args) {
     [mainWindow, ...overlayWindows.values()].forEach(win => {
       if (win && !win.isDestroyed()) {
         win.webContents.send("BroadcastMessage", ...args);
       }
     });
+  }
+
+  ipcMain.on("BroadcastMessage", (event, ...args) => {
+    broadcastMessage(...args);
   });
 
-  ipcMain.handle("GetScreenInfo", () => {
-    return screen.getAllDisplays();
+  setTimeout(() => {
+    const exePath = path.join(__dirname, `./bins/win-taskbar-manager.exe`);
+
+    try {
+      const jsonStream = new JSONStream();
+
+      let process = cp.spawn(exePath, {
+        cwd: path.dirname(exePath),
+      });
+
+      console.log(`Taskbar Manager started with PID: ${process.pid}`);
+
+      process.stdout.setEncoding("utf-8");
+      process.stdout.on("data", (data) => {
+        jsonStream.write(data);
+      });
+
+      jsonStream.on("data", (data) => {
+        broadcastMessage("TaskbarManagerMessage", data);
+        console.log(`Taskbar Manager: ${JSON.stringify(data)}`);
+      });
+
+      process.once("error", (err) => {
+        console.error(`Taskbar Manager error: ${err}`);
+      });
+
+      process.once("exit", () => {
+        process?.removeAllListeners();
+      });
+
+      app.on("before-quit", () => {
+        if (process && !process.killed) {
+          process.kill();
+          console.log(`Taskbar Manager killed.`);
+        }
+      });
+    } catch (e) {
+      console.error(`Failed to start Taskbar Manager: ${e.message}`);
+    }
+  }, 1000);
+
+  ipcMain.on("GetScreens", (e) => {
+    e.returnValue = screen.getAllDisplays();
+    return;
   });
 
   ipcMain.handle("CreateOverlayWindow", (_, { screenId, id, path }) => {
@@ -105,11 +153,12 @@ async function createApp() {
       win.loadFile(`./build/${path}/index.html`.replace(/\/\//g, '/'));
     }
     win.show();
-    win.openDevTools();
+    win.openDevTools({ mode: 'detach' });
   });
 
   ipcMain.handle("DestroyOverlayWindow", (_, id) => {
     overlayWindows.get(id)?.destroy();
+    overlayWindows.delete(id);
   });
 
   ipcMain.handle("KillAllOverlayWindows", () => {
@@ -122,7 +171,7 @@ async function createApp() {
   ipcMain.handle("SetOverlayWindowIgnoreMouseEvents", async (_, id, ignore = true) => {
     const win = overlayWindows.get(id);
     if (!win || win.isDestroyed()) return;
-    win.setIgnoreMouseEvents(ignore, { forward: true });
+    win.setIgnoreMouseEvents(ignore);
   });
 
   ipcMain.handle("SetOverlayWindowAlign", async (_, id, { width, height, x, y, visible } = {}) => {
@@ -297,6 +346,10 @@ app.whenReady().then(async () => {
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createApp()
   })
+});
+
+app.on('before-quit', () => {
+
 });
 
 app.on('window-all-closed', function () {
