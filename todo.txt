@@ -1,0 +1,2 @@
+rewrite renderer in ts and bundle using esbuild
+and move keyListener to renderer side so it wont reload everytime we update client
