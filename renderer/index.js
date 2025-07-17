@@ -310,8 +310,8 @@ app.on('second-instance', (event, argv) => {
   win.focus();
 
   let deepLink = argv.pop();
-  if (deepLink && deepLink.startsWith("riverlauncher://")) {
-    deepLink = deepLink.replace("riverlauncher://", "");
+  if (deepLink && deepLink.startsWith("arui://")) {
+    deepLink = deepLink.replace("arui://", "");
     if (deepLink.startsWith("/")) deepLink = deepLink.slice(1);
     if (deepLink.endsWith("/")) deepLink = deepLink.slice(0, -1);
     deepLink = decodeURIComponent(deepLink);
