@@ -18,7 +18,7 @@
 		}) => void;
 	} = $props();
 
-	let container = $state<HTMLElement | null>(null);
+	let container = $state<HTMLDivElement | null>(null);
 	let isMouseInside = $state(false);
 
 	function handleMouseEnter() {

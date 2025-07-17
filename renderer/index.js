@@ -113,7 +113,6 @@ async function createApp() {
 
       jsonStream.on("data", (data) => {
         broadcastMessage("TaskbarManagerMessage", data);
-        console.log(`Taskbar Manager: ${JSON.stringify(data)}`);
       });
 
       process.once("error", (err) => {
