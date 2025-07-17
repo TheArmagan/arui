@@ -11,7 +11,7 @@ export class KeyListener {
   constructor(public native: Native) { }
 
   start(mode: "mouse" | "complex") {
-    this.stop(mode); // Ensure we stop any existing process before starting a new one
+    this.stop(mode);
     const exePath = path.join(this.native.api.ipc.getPath("appPath"), `./bins/key-listener.exe`);
     try {
       const jsonStream = new JSONStream();
