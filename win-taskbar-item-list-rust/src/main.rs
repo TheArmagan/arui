@@ -47,6 +47,9 @@ enum Commands {
         /// Window handle (HWND) as integer
         #[arg(long)]
         hwnd: i32,
+        /// Maximum size as WIDTHxHEIGHT (e.g., 512x512)
+        #[arg(long, default_value = "256x256")]
+        size: String,
     },
     /// Minimize a window by HWND
     MinimizeWindow {
@@ -289,9 +292,19 @@ impl TaskbarMonitor {
         }
     }
 
-    fn get_window_screenshot_as_base64(hwnd: i32) -> Option<String> {
+    fn get_window_screenshot_as_base64(hwnd: i32, size_str: &str) -> Option<String> {
         unsafe {
             let hwnd = hwnd as HWND;
+
+            // Size string'ini parse et (örneğin "512x512")
+            let (max_width, max_height) = if let Some((w_str, h_str)) = size_str.split_once('x') {
+                match (w_str.parse::<i32>(), h_str.parse::<i32>()) {
+                    (Ok(w), Ok(h)) if w > 0 && h > 0 => (w, h),
+                    _ => (256, 256), // Geçersiz format, varsayılan değer
+                }
+            } else {
+                (256, 256) // Geçersiz format, varsayılan değer
+            };
 
             // Pencere boyutlarını al
             let mut rect = std::mem::zeroed::<winapi::shared::windef::RECT>();
@@ -306,14 +319,25 @@ impl TaskbarMonitor {
                 return None;
             }
 
-            // Maksimum boyutları belirle (256x256)
-            let max_size = 256;
+            // Maksimum boyutları belirle
             let (target_width, target_height) = if window_width > window_height {
-                let ratio = max_size as f32 / window_width as f32;
-                (max_size, (window_height as f32 * ratio) as i32)
+                let ratio = max_width as f32 / window_width as f32;
+                let new_height = (window_height as f32 * ratio) as i32;
+                if new_height > max_height {
+                    let ratio = max_height as f32 / window_height as f32;
+                    ((window_width as f32 * ratio) as i32, max_height)
+                } else {
+                    (max_width, new_height)
+                }
             } else {
-                let ratio = max_size as f32 / window_height as f32;
-                ((window_width as f32 * ratio) as i32, max_size)
+                let ratio = max_height as f32 / window_height as f32;
+                let new_width = (window_width as f32 * ratio) as i32;
+                if new_width > max_width {
+                    let ratio = max_width as f32 / window_width as f32;
+                    (max_width, (window_height as f32 * ratio) as i32)
+                } else {
+                    (new_width, max_height)
+                }
             };
 
             // Device context'ler oluştur
@@ -1139,16 +1163,16 @@ async fn main() {
                 }
             }
         }
-        Some(Commands::GetWindowScreenshot { hwnd }) => {
+        Some(Commands::GetWindowScreenshot { hwnd, size }) => {
             // Pencere screenshot alma modu
-            match TaskbarMonitor::get_window_screenshot_as_base64(hwnd) {
+            match TaskbarMonitor::get_window_screenshot_as_base64(hwnd, &size) {
                 Some(base64_screenshot) => {
                     let response = serde_json::json!({
                         "success": true,
                         "hwnd": hwnd,
                         "screenshot_base64": base64_screenshot,
                         "format": "PNG",
-                        "max_size": "256x256"
+                        "max_size": size
                     });
                     println!("{}", response);
                 }

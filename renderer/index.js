@@ -57,10 +57,10 @@ const overlayWindows = new Map();
 
 async function createApp() {
   const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 700,
-    minWidth: 1200,
-    minHeight: 700,
+    width: 300,
+    height: 100,
+    minWidth: 200,
+    minHeight: 100,
     frame: false,
     transparent: true,
     backgroundColor: "#00000000",

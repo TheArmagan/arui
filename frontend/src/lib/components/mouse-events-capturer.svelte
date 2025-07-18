@@ -14,6 +14,7 @@
 		onMouseEvent?: (o: {
 			type: 'enter' | 'leave';
 			preventDefault(): void;
+			doDefault(): void;
 			target: HTMLDivElement;
 		}) => void;
 	} = $props();
@@ -26,6 +27,9 @@
 		onMouseEvent?.({
 			type: 'enter',
 			preventDefault: () => (preventDefault = true),
+			doDefault: () => {
+				api.ipc.setOverlayWindowIgnoreMouseEvents(overlayId, false);
+			},
 			target: container!
 		});
 		if (!preventDefault) {
@@ -38,6 +42,9 @@
 		onMouseEvent?.({
 			type: 'leave',
 			preventDefault: () => (preventDefault = true),
+			doDefault: () => {
+				api.ipc.setOverlayWindowIgnoreMouseEvents(overlayId, true);
+			},
 			target: container!
 		});
 		if (!preventDefault) {

@@ -38,19 +38,33 @@ export class TaskbarItemList {
   trayItems = $derived(this.items.filter(item => !item.is_system_window && item.is_definitely_tray));
 
   icons: Record<string, string | null> = $state({});
+  screenshots: Record<number, { at: number, data: string }> = $state({});
 
   exePath!: string;
   process: import("child_process").ChildProcessWithoutNullStreams | null = null;
+
+  checkInterval: NodeJS.Timeout | null = null;
   constructor(public native: Native) {
   }
 
   async init() {
     this.exePath = path.join(this.native.api.ipc.getPath("appPath"), `./bins/win-taskbar-item-list.exe`);
     this.start();
+    this.checkInterval = setInterval(() => {
+      Object.entries(this.screenshots).forEach(([hwnd, data]) => {
+        if (Date.now() - data.at > 60000 * 15) {
+          delete this.screenshots[Number(hwnd)];
+        }
+      });
+    }), 1000;
   }
 
   async destroy() {
     this.stop();
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+      this.checkInterval = null;
+    }
   }
 
   async getExecutableImage(exePath: string, force: boolean = false): Promise<string | null> {
@@ -68,6 +82,23 @@ export class TaskbarItemList {
     }
     this.icons[exePath] = json.icon_base64 as string;
     return json.icon_base64 as string;
+  }
+
+  async getWindowScreenshot(hwnd: number, force: boolean = false): Promise<string | null> {
+    if (this.screenshots[hwnd] && !force && (Date.now() - this.screenshots[hwnd].at < 15000)) {
+      return this.screenshots[hwnd].data;
+    }
+
+    this.screenshots[hwnd] = { at: Date.now(), data: "" };
+    const res = await execAsync(`"${this.exePath}" get-window-screenshot --hwnd ${hwnd} --size 256x256`);
+    res.stdout = res.stdout.trim();
+    const json = JSON.parse(res.stdout);
+    if (!json.success) {
+      delete this.screenshots[hwnd];
+      return null;
+    }
+    this.screenshots[hwnd].data = json.screenshot_base64 as string;
+    return json.screenshot_base64 as string;
   }
 
   async minimizeWindow(hwnd: number) {
@@ -126,6 +157,9 @@ export class TaskbarItemList {
           this.items.forEach((item) => {
             if (item.is_definitely_taskbar || item.is_definitely_tray) {
               this.getExecutableImage(item.executable_path);
+            }
+            if (item.is_definitely_taskbar) {
+              this.getWindowScreenshot(item.hwnd);
             }
           });
         }
