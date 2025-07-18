@@ -16,10 +16,12 @@ export class ARUIAPI {
   native = new Native(this);
   constructor() { }
 
-  async init() {
+  async init(initFrom: "main" | "overlay" = "main") {
     this.logger.info("ARUIAPI", "Initializing ARUIAPI");
     // Initialize other components or services as needed
-    await this.native.init();
+    if (initFrom === "overlay") {
+      await this.native.init();
+    }
     await this.broadcastedEvents.init();
     this.logger.info("ARUIAPI", "ARUIAPI initialized successfully");
   }

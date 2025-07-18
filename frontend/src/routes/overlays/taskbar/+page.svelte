@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { api } from '@/base/api';
 	import MouseEventsCapturer from '@/components/mouse-events-capturer.svelte';
 	import { onMount } from 'svelte';
@@ -62,12 +62,35 @@
 			? 'translate-y-0'
 			: 'translate-y-32'} w-full drop-shadow-[0_8px_12px_rgba(0,0,0,0.5)] transition-all duration-300"
 	>
-		<Card.Root class="bg-accent/85 flex w-full items-start justify-center gap-4 p-4">
-			<div class="border-r pr-2">
+		<div class="bg-accent/85 flex items-center gap-4 rounded-lg border p-4">
+			<!-- <div>
 				<Settings
 					class="h-8 w-8 cursor-pointer transition-all duration-300 hover:rotate-180 hover:scale-110"
 				/>
-			</div>
-		</Card.Root>
+			</div> -->
+			{#each api.native.taskbarItemList.taskbarItemsGrouped as group}
+				{@const icon = api.native.taskbarItemList.icons[group[0].executable_path]}
+				{@const isFocused = group.some((item) => item.is_focused)}
+				{@const isRunning = group.some((item) => item.is_running)}
+				<button
+					class="{isFocused
+						? '-translate-y-1 opacity-100'
+						: 'opacity-50'} transition-all duration-300"
+					onclick={() => {
+						if (isRunning) {
+							api.native.taskbarItemList.toggleFocusWindow(group.find((i) => i.hwnd)!.hwnd);
+						} else {
+							api.native.taskbarItemList.startExecutable(group[0].executable_path);
+						}
+					}}
+				>
+					<img
+						src={`data:image/png;base64,${icon}`}
+						class="h-8 w-8 cursor-pointer transition-all duration-300 hover:scale-110"
+						alt={group[0].title}
+					/>
+				</button>
+			{/each}
+		</div>
 	</MouseEventsCapturer>
 </div>

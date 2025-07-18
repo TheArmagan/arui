@@ -14,7 +14,9 @@ use winapi::shared::windef::HWND;
 use winapi::um::handleapi::CloseHandle;
 use winapi::um::processthreadsapi::OpenProcess;
 use winapi::um::psapi::{GetModuleBaseNameW, GetModuleFileNameExW};
-use winapi::um::shellapi::{SHGetFileInfoW, SHFILEINFOW, SHGFI_ICON, SHGFI_LARGEICON};
+use winapi::um::shellapi::{
+    ExtractIconW, SHGetFileInfoW, ShellExecuteW, SHFILEINFOW, SHGFI_ICON, SHGFI_LARGEICON,
+};
 use winapi::um::wingdi::*;
 use winapi::um::winuser::*;
 
@@ -70,6 +72,30 @@ enum Commands {
         #[arg(long)]
         hwnd: i32,
     },
+    /// Focus a window by HWND (bring to foreground)
+    FocusWindow {
+        /// Window handle (HWND) as integer
+        #[arg(long)]
+        hwnd: i32,
+    },
+    /// Unfocus a window by HWND (send to background)
+    UnfocusWindow {
+        /// Window handle (HWND) as integer
+        #[arg(long)]
+        hwnd: i32,
+    },
+    /// Toggle focus state of a window by HWND
+    ToggleFocusWindow {
+        /// Window handle (HWND) as integer
+        #[arg(long)]
+        hwnd: i32,
+    },
+    /// Start an executable file
+    StartExecutable {
+        /// Path to the executable file to start
+        #[arg(long)]
+        path: String,
+    },
     /// Monitor taskbar items (default action)
     Monitor,
 }
@@ -90,6 +116,8 @@ struct TaskbarItem {
     executable_path: String,
     item_type: String, // "running", "pinned", "both"
     is_tray_icon: bool,
+    is_focused: bool, // Pencere şu anda odakta mı
+    is_running: bool, // Uygulama şu anda çalışıyor mu (process_id > 0)
     // Yeni filtreleme için özel alanlar
     is_definitely_taskbar: bool, // Kesin olarak taskbar'da görünen
     is_definitely_tray: bool,    // Kesin olarak system tray'de olan
@@ -414,20 +442,31 @@ impl TaskbarMonitor {
             let hicon = if result != 0 && !shfi.hIcon.is_null() {
                 shfi.hIcon
             } else {
-                // SHGetFileInfoW başarısız olduysa LoadImageW dene
-                let hicon = LoadImageW(
+                // SHGetFileInfoW başarısız olduysa ExtractIconW dene (UWP uygulamaları için daha iyi)
+                let hicon = ExtractIconW(
                     null_mut(),
                     path_wide.as_ptr(),
-                    IMAGE_ICON,
-                    32,
-                    32,
-                    LR_LOADFROMFILE,
-                ) as winapi::shared::windef::HICON;
+                    0, // İlk icon'u al
+                );
 
-                if hicon.is_null() {
-                    return None;
+                if hicon.is_null() || hicon as isize == 1 {
+                    // ExtractIconW başarısız olduysa LoadImageW dene
+                    let hicon = LoadImageW(
+                        null_mut(),
+                        path_wide.as_ptr(),
+                        IMAGE_ICON,
+                        32,
+                        32,
+                        LR_LOADFROMFILE,
+                    ) as winapi::shared::windef::HICON;
+
+                    if hicon.is_null() {
+                        return None;
+                    }
+                    hicon
+                } else {
+                    hicon
                 }
-                hicon
             };
 
             // Icon bilgilerini al
@@ -583,6 +622,77 @@ impl TaskbarMonitor {
             let hwnd = hwnd as HWND;
             // WM_CLOSE mesajı gönder (graceful close)
             PostMessageW(hwnd, WM_CLOSE, 0, 0) != 0
+        }
+    }
+
+    fn focus_window(hwnd: i32) -> bool {
+        unsafe {
+            let hwnd = hwnd as HWND;
+            // Pencereyi önplana getir
+            if SetForegroundWindow(hwnd) != 0 {
+                // Eğer minimize edilmişse restore et
+                if IsIconic(hwnd) != 0 {
+                    ShowWindow(hwnd, SW_RESTORE);
+                }
+                return true;
+            }
+            false
+        }
+    }
+
+    fn unfocus_window(hwnd: i32) -> bool {
+        unsafe {
+            let hwnd = hwnd as HWND;
+            let current_foreground = GetForegroundWindow();
+
+            // Eğer bu pencere şu anda focus'taysa, bir sonraki pencereye geç
+            if hwnd == current_foreground {
+                // Alt+Tab benzeri davranış için
+                keybd_event(0x12, 0, 0, 0); // Alt tuşunu bas
+                keybd_event(0x09, 0, 0, 0); // Tab tuşunu bas
+                keybd_event(0x09, 0, 0x02, 0); // Tab tuşunu bırak
+                keybd_event(0x12, 0, 0x02, 0); // Alt tuşunu bırak
+                return true;
+            }
+            false
+        }
+    }
+
+    fn toggle_focus_window(hwnd: i32) -> bool {
+        unsafe {
+            let hwnd = hwnd as HWND;
+            let current_foreground = GetForegroundWindow();
+
+            if hwnd == current_foreground {
+                // Şu anda focus'ta, unfocus et
+                Self::unfocus_window(hwnd as i32)
+            } else {
+                // Focus'ta değil, focus et
+                Self::focus_window(hwnd as i32)
+            }
+        }
+    }
+
+    fn start_executable(executable_path: &str) -> bool {
+        unsafe {
+            // Executable path'i wide string'e çevir
+            let path_wide: Vec<u16> = executable_path
+                .encode_utf16()
+                .chain(std::iter::once(0))
+                .collect();
+
+            // ShellExecuteW kullanarak executable'ı başlat
+            let result = ShellExecuteW(
+                null_mut(),         // hwnd
+                std::ptr::null(),   // lpOperation (default: "open")
+                path_wide.as_ptr(), // lpFile
+                std::ptr::null(),   // lpParameters
+                std::ptr::null(),   // lpDirectory
+                1,                  // nShowCmd (SW_SHOWNORMAL)
+            );
+
+            // ShellExecuteW 32'den büyük bir değer döndürürse başarılı
+            result as isize > 32
         }
     }
 
@@ -812,6 +922,8 @@ impl TaskbarMonitor {
                     executable_path: pinned_executable_path,
                     item_type: "pinned".to_string(),
                     is_tray_icon: false,
+                    is_focused: false, // Pinned item'lar focused olamazlar (çalışmadıkları için)
+                    is_running: false, // Pinned-only item'lar çalışmıyor
                     is_definitely_taskbar: true,
                     is_definitely_tray: false,
                     is_system_window: false,
@@ -820,6 +932,22 @@ impl TaskbarMonitor {
                 items.push(item);
             }
         }
+
+        // Itemları tutarlı bir şekilde sırala
+        items.sort_by(|a, b| {
+            // Önce çalışan/pinned durumuna göre sırala
+            match (a.is_running, b.is_running) {
+                (true, false) => std::cmp::Ordering::Less, // Çalışan itemlar önce
+                (false, true) => std::cmp::Ordering::Greater, // Pinned itemlar sonra
+                _ => {
+                    // Aynı durumdaysa (ikisi de çalışıyor veya ikisi de pinned)
+                    // Process name'e göre alfabetik sırala
+                    a.process_name
+                        .to_lowercase()
+                        .cmp(&b.process_name.to_lowercase())
+                }
+            }
+        });
 
         items
     }
@@ -928,6 +1056,10 @@ unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: isize) -> i32 {
                 "running".to_string()
             };
 
+            // Pencere focus durumunu kontrol et
+            let foreground_window = GetForegroundWindow();
+            let is_focused = hwnd == foreground_window;
+
             let item = TaskbarItem {
                 title,
                 process_name,
@@ -943,6 +1075,8 @@ unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: isize) -> i32 {
                 executable_path,
                 item_type,
                 is_tray_icon,
+                is_focused,
+                is_running: process_id > 0, // Process ID varsa çalışıyor
                 is_definitely_taskbar,
                 is_definitely_tray,
                 is_system_window,
@@ -1100,6 +1234,82 @@ async fn main() {
                     "success": false,
                     "hwnd": hwnd,
                     "error": "Could not send close message to window"
+                });
+                println!("{}", response);
+            }
+        }
+        Some(Commands::FocusWindow { hwnd }) => {
+            // Pencereyi focus et
+            if TaskbarMonitor::focus_window(hwnd) {
+                let response = serde_json::json!({
+                    "success": true,
+                    "hwnd": hwnd,
+                    "action": "focus",
+                    "message": "Window focused successfully"
+                });
+                println!("{}", response);
+            } else {
+                let response = serde_json::json!({
+                    "success": false,
+                    "hwnd": hwnd,
+                    "error": "Could not focus window"
+                });
+                println!("{}", response);
+            }
+        }
+        Some(Commands::UnfocusWindow { hwnd }) => {
+            // Pencereyi unfocus et
+            if TaskbarMonitor::unfocus_window(hwnd) {
+                let response = serde_json::json!({
+                    "success": true,
+                    "hwnd": hwnd,
+                    "action": "unfocus",
+                    "message": "Window unfocused successfully"
+                });
+                println!("{}", response);
+            } else {
+                let response = serde_json::json!({
+                    "success": false,
+                    "hwnd": hwnd,
+                    "error": "Could not unfocus window"
+                });
+                println!("{}", response);
+            }
+        }
+        Some(Commands::ToggleFocusWindow { hwnd }) => {
+            // Pencereyi toggle focus et
+            if TaskbarMonitor::toggle_focus_window(hwnd) {
+                let response = serde_json::json!({
+                    "success": true,
+                    "hwnd": hwnd,
+                    "action": "toggle_focus",
+                    "message": "Window focus toggled successfully"
+                });
+                println!("{}", response);
+            } else {
+                let response = serde_json::json!({
+                    "success": false,
+                    "hwnd": hwnd,
+                    "error": "Could not toggle window focus"
+                });
+                println!("{}", response);
+            }
+        }
+        Some(Commands::StartExecutable { path }) => {
+            // Executable'ı başlat
+            if TaskbarMonitor::start_executable(&path) {
+                let response = serde_json::json!({
+                    "success": true,
+                    "path": path,
+                    "action": "start",
+                    "message": "Executable started successfully"
+                });
+                println!("{}", response);
+            } else {
+                let response = serde_json::json!({
+                    "success": false,
+                    "path": path,
+                    "error": "Could not start executable"
                 });
                 println!("{}", response);
             }
