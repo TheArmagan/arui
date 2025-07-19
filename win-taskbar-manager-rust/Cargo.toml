@@ -5,6 +5,14 @@ edition = "2021"
 authors = ["Armagan <armagan@example.com>"]
 description = "Windows Taskbar Manager - Hide taskbar and capture mouse events"
 
+[[bin]]
+name = "win-taskbar-manager"
+path = "src/main.rs"
+
+[[bin]]
+name = "emergency-restore"
+path = "src/emergency_restore.rs"
+
 [dependencies]
 windows = { version = "0.58", features = [
     "Win32_Foundation",
@@ -19,3 +27,4 @@ chrono = { version = "0.4", features = ["serde"] }
 log = "0.4"
 env_logger = "0.11"
 ctrlc = "3.4"
+clap = { version = "4.0", features = ["derive"] }

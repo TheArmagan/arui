@@ -24,10 +24,15 @@ pub struct TaskbarManager {
     is_hidden: bool,
     event_sender: mpsc::UnboundedSender<TaskbarEvent>,
     last_mouse_in_taskbar: bool,
+    workspace_top_offset: i32,
+    workspace_bottom_offset: i32,
 }
 
 impl TaskbarManager {
-    pub fn new() -> std::result::Result<
+    pub fn new(
+        workspace_top_offset: i32,
+        workspace_bottom_offset: i32,
+    ) -> std::result::Result<
         (Self, mpsc::UnboundedReceiver<TaskbarEvent>),
         Box<dyn std::error::Error>,
     > {
@@ -46,6 +51,8 @@ impl TaskbarManager {
             is_hidden: false,
             event_sender,
             last_mouse_in_taskbar: false,
+            workspace_top_offset,
+            workspace_bottom_offset,
         };
 
         Ok((manager, event_receiver))
@@ -121,22 +128,30 @@ impl TaskbarManager {
                 },
             );
 
-            // FULL EKRAN İÇİN: Çalışma alanını tam ekran yap
+            // FULL EKRAN İÇİN: Çalışma alanını offset'lerle birlikte ayarla
             let screen_width = GetSystemMetrics(SM_CXSCREEN);
             let screen_height = GetSystemMetrics(SM_CYSCREEN);
 
             let mut full_work_area = windows::Win32::Foundation::RECT {
                 left: 0,
-                top: 0,
+                top: self.workspace_top_offset, // Üstten offset
                 right: screen_width,
-                bottom: screen_height, // TAM EKRAN: taskbar yok, tüm alan kullanılabilir
+                bottom: screen_height - self.workspace_bottom_offset, // Alttan offset
             };
 
-            let _ = SystemParametersInfoW(
+            println!("{{\"event_type\":\"workspace_area_set\",\"left\":{},\"top\":{},\"right\":{},\"bottom\":{},\"screen_width\":{},\"screen_height\":{}}}", 
+                     full_work_area.left, full_work_area.top, full_work_area.right, full_work_area.bottom, screen_width, screen_height);
+
+            let result = SystemParametersInfoW(
                 SPI_SETWORKAREA,
                 0,
                 Some(&mut full_work_area as *mut _ as *mut _),
                 SPIF_UPDATEINIFILE | SPIF_SENDCHANGE,
+            );
+
+            println!(
+                "{{\"event_type\":\"system_parameters_result\",\"success\":{}}}",
+                result.is_ok()
             );
 
             self.is_hidden = true;
@@ -146,7 +161,10 @@ impl TaskbarManager {
                 event_type: "taskbar_hidden".to_string(),
                 timestamp: Utc::now(),
                 mouse_position: self.get_mouse_position(),
-                taskbar_state: "hidden_aggressive_mode_all_monitors".to_string(),
+                taskbar_state: format!(
+                    "hidden_aggressive_mode_all_monitors_top_offset_{}_bottom_offset_{}",
+                    self.workspace_top_offset, self.workspace_bottom_offset
+                ),
             };
 
             let _ = self.event_sender.send(event);
@@ -237,12 +255,45 @@ impl TaskbarManager {
     /// Güvenli şekilde taskbar'ı restore et
     pub fn restore_taskbar(&mut self) -> std::result::Result<(), Box<dyn std::error::Error>> {
         if self.is_hidden {
-            // EXPLORER RESTART - En etkili çözüm
+            println!(
+                "{{\"event_type\":\"restore_starting\",\"method\":\"comprehensive_restore\"}}"
+            );
+
+            // 1. ÖNCE WORKSPACE ALANINI NORMALE DÖNDÜR
+            unsafe {
+                let screen_width = GetSystemMetrics(SM_CXSCREEN);
+                let screen_height = GetSystemMetrics(SM_CYSCREEN);
+                let taskbar_height = 40;
+
+                let mut normal_work_area = windows::Win32::Foundation::RECT {
+                    left: 0,
+                    top: 0,
+                    right: screen_width,
+                    bottom: screen_height - taskbar_height,
+                };
+
+                let _ = SystemParametersInfoW(
+                    SPI_SETWORKAREA,
+                    0,
+                    Some(&mut normal_work_area as *mut _ as *mut _),
+                    SPIF_UPDATEINIFILE | SPIF_SENDCHANGE,
+                );
+
+                println!(
+                    "{{\"event_type\":\"workspace_normalized\",\"width\":{},\"height\":{}}}",
+                    screen_width,
+                    screen_height - taskbar_height
+                );
+            }
+
+            std::thread::sleep(std::time::Duration::from_millis(500));
+
+            // 2. SONRA EXPLORER RESTART
             std::process::Command::new("taskkill")
                 .args(&["/F", "/IM", "explorer.exe"])
                 .output()?;
 
-            std::thread::sleep(std::time::Duration::from_millis(500));
+            std::thread::sleep(std::time::Duration::from_millis(1000));
 
             std::process::Command::new("explorer.exe").spawn()?;
 
@@ -252,7 +303,7 @@ impl TaskbarManager {
                 event_type: "taskbar_restored".to_string(),
                 timestamp: Utc::now(),
                 mouse_position: self.get_mouse_position(),
-                taskbar_state: "restored_via_explorer_restart".to_string(),
+                taskbar_state: "restored_via_comprehensive_method".to_string(),
             };
 
             let _ = self.event_sender.send(event);
