@@ -1,6 +1,5 @@
 mod taskbar;
 
-use clap::Parser;
 use env_logger::Env;
 use log::error;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -8,19 +7,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use taskbar::{TaskbarEvent, TaskbarManager};
 use tokio::time;
-
-/// Windows Taskbar Manager - Hide taskbar and capture mouse events
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    /// Top offset for workspace area (default: 0)
-    #[arg(long, default_value_t = 0)]
-    workspace_top_offset: i32,
-
-    /// Bottom offset for workspace area (default: 0)
-    #[arg(long, default_value_t = 0)]
-    workspace_bottom_offset: i32,
-}
 
 /// Acil durum taskbar restore fonksiyonu
 fn emergency_taskbar_restore() {
@@ -35,26 +21,17 @@ fn emergency_taskbar_restore() {
 }
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Command line argümanlarını parse et
-    let args = Args::parse();
-
     // Logger'ı başlat
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    println!(
-        "{{\"event_type\":\"startup\",\"workspace_top_offset\":{},\"workspace_bottom_offset\":{}}}",
-        args.workspace_top_offset, args.workspace_bottom_offset
-    );
-
-    // TaskbarManager'ı offset'lerle oluştur
-    let (mut taskbar_manager, mut event_receiver) =
-        match TaskbarManager::new(args.workspace_top_offset, args.workspace_bottom_offset) {
-            Ok((manager, receiver)) => (manager, receiver),
-            Err(e) => {
-                emergency_taskbar_restore();
-                return Err(e);
-            }
-        };
+    // TaskbarManager'ı oluştur
+    let (mut taskbar_manager, mut event_receiver) = match TaskbarManager::new() {
+        Ok((manager, receiver)) => (manager, receiver),
+        Err(e) => {
+            emergency_taskbar_restore();
+            return Err(e);
+        }
+    };
 
     // Taskbar'ı gizle
     if let Err(e) = taskbar_manager.hide_taskbar() {
@@ -69,8 +46,53 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    // Guardian KALDIRILDI - Sadece başlangıçta gizle, sonra karışma
-    println!("{{\"event_type\":\"guardian_disabled\",\"reason\":\"user_request\"}}");
+    // Background taskbar guardian - TÜM MONİTÖRLERDEKİ taskbar'ları sürekli gizli tut
+    let _guardian_task = tokio::spawn(async move {
+        let mut guardian_interval = time::interval(Duration::from_millis(200));
+        loop {
+            guardian_interval.tick().await;
+
+            unsafe {
+                use windows::Win32::UI::WindowsAndMessaging::*;
+
+                // Ana taskbar'ı kontrol et
+                if let Ok(taskbar_hwnd) = windows::Win32::UI::WindowsAndMessaging::FindWindowW(
+                    windows::core::w!("Shell_TrayWnd"),
+                    None,
+                ) {
+                    if IsWindowVisible(taskbar_hwnd).as_bool() {
+                        println!("{{\"event_type\":\"auto_hide\",\"reason\":\"main_taskbar_became_visible\"}}");
+                        let _ = ShowWindow(taskbar_hwnd, SW_HIDE);
+                    }
+                }
+
+                // İkincil taskbar'ları kontrol et (çoklu monitör)
+                let secondary_classes = [
+                    windows::core::w!("Shell_SecondaryTrayWnd"),
+                    windows::core::w!("WorkerW"),
+                ];
+
+                for class_name in &secondary_classes {
+                    if let Ok(mut current_hwnd) =
+                        windows::Win32::UI::WindowsAndMessaging::FindWindowW(*class_name, None)
+                    {
+                        loop {
+                            if IsWindowVisible(current_hwnd).as_bool() {
+                                println!("{{\"event_type\":\"auto_hide\",\"reason\":\"secondary_taskbar_became_visible\"}}");
+                                let _ = ShowWindow(current_hwnd, SW_HIDE);
+                            }
+
+                            // Sonraki pencereyi ara
+                            match FindWindowExW(None, current_hwnd, *class_name, None) {
+                                Ok(next_hwnd) => current_hwnd = next_hwnd,
+                                Err(_) => break,
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
 
     // Ctrl+C handler kurulumu
     let shutdown_flag = Arc::new(AtomicBool::new(false));
