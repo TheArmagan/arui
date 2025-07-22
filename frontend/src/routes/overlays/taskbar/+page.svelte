@@ -124,7 +124,7 @@
 <div class="relative flex h-[100vh] w-full items-end justify-center p-4 contain-content">
 	<MouseEventsCapturer
 		overlayId="taskbar"
-		class="bg-background absolute right-2 top-2 transform rounded-lg border px-4 py-2 text-sm font-semibold text-white shadow transition-all duration-300"
+		class="bg-background absolute right-2 top-2 flex transform flex-col items-end justify-center gap-1 rounded-lg border px-4 py-2 shadow transition-all duration-300"
 		onMouseEvent={(e) => {
 			e.preventDefault();
 			if (e.type === 'enter') {
@@ -134,16 +134,29 @@
 			}
 		}}
 	>
-		{now.toLocaleString('en-US', {
-			weekday: 'short',
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit',
-			hour12: true
-		})}
+		<div class="flex items-center gap-2 truncate text-xs">
+			<img
+				src={`data:image/png;base64,${api.native.taskbarItemList.icons[api.native.taskbarItemList.focusedItem?.executable_path || '']}`}
+				class="h-3 w-3"
+				alt="Focused Window Icon"
+				draggable="false"
+			/>
+			<span class="max-w-64 truncate font-light opacity-95">
+				{api.native.taskbarItemList.focusedItem?.title || 'Desktop'}
+			</span>
+		</div>
+		<div class="flex text-sm font-semibold text-white">
+			{now.toLocaleString('en-US', {
+				weekday: 'short',
+				year: 'numeric',
+				month: 'short',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+				second: '2-digit',
+				hour12: true
+			})}
+		</div>
 	</MouseEventsCapturer>
 
 	<MouseEventsCapturer
@@ -287,8 +300,9 @@
 										<Tooltip.Content
 											arrowClasses="hidden"
 											class="bg-accent hide-when-taskbar-hidden p-0 text-white"
-											sideOffset={24}
+											sideOffset={32}
 											side="top"
+											onmousemove={() => setHovering(true)}
 										>
 											<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 											<MouseEventsCapturer
@@ -299,7 +313,7 @@
 														e.preventDefault();
 														setHoveringWithDelay(false, 100);
 														setTimeout(() => {
-															// e.doDefault();
+															e.doDefault();
 															shouldShowTaskbar = false;
 														}, 100);
 													} else if (e.type === 'enter') {

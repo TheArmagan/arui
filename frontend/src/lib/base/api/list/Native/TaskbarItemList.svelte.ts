@@ -33,6 +33,7 @@ export interface TaskbarItem {
 
 export class TaskbarItemList {
   items = $state<TaskbarItem[]>([]);
+  focusedItem = $derived(this.items.find(item => item.is_focused) || null);
   taskbarItems = $derived(this.items.filter(item => item.is_definitely_taskbar && item.title && item.hwnd));
   taskbarItemsGrouped = $derived(Object.values(Object.groupBy(this.taskbarItems, item => item.process_id))) as TaskbarItem[][];
   trayItems = $derived(this.items.filter(item => item.is_definitely_tray));
@@ -173,7 +174,7 @@ export class TaskbarItemList {
         if (data.action === "list") {
           this.items = data.items as TaskbarItem[];
           this.items.forEach((item) => {
-            if (item.is_definitely_taskbar || item.is_definitely_tray) {
+            if (item.is_definitely_taskbar || item.is_definitely_tray || item.is_focused) {
               this.getExecutableImage(item.executable_path);
             }
             // Sadece HWND'si 0'dan farklı olan taskbar itemları için screenshot al
