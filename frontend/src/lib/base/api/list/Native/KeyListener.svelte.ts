@@ -6,6 +6,14 @@ const JSONStream = require('json-stream');
 import type { Native } from ".";
 
 export class KeyListener {
+  mouse = $state({
+    x: 0,
+    y: 0,
+    left: false,
+    middle: false,
+    right: false
+  })
+
   processes = new Map<string, import("child_process").ChildProcessWithoutNullStreams>();
 
   constructor(public native: Native) { }
@@ -29,6 +37,29 @@ export class KeyListener {
 
       jsonStream.on("data", (data: any) => {
         this.native.api.events.emit("KeyListenerMessage", { data, mode });
+        switch (mode) {
+          case "mouse": {
+            switch (data.event_type) {
+              case "move": {
+                this.mouse.x = data.x;
+                this.mouse.y = data.y;
+                break;
+              }
+              case "button": {
+                switch (data.button) {
+                  case "left":
+                  case "middle":
+                  case "right": {
+                    this.mouse[data.button as "left" | "middle" | "right"] = data.pressed;
+                    break;
+                  }
+                }
+                break;
+              }
+            }
+            break;
+          }
+        }
       });
 
       process.once("error", (err) => {

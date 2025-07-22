@@ -33,7 +33,7 @@ export interface TaskbarItem {
 
 export class TaskbarItemList {
   items = $state<TaskbarItem[]>([]);
-  taskbarItems = $derived(this.items.filter(item => item.is_definitely_taskbar && item.title));
+  taskbarItems = $derived(this.items.filter(item => item.is_definitely_taskbar && item.title && item.process_name !== 'File Explorer.exe'));
   taskbarItemsGrouped = $derived(Object.values(Object.groupBy(this.taskbarItems, item => item.process_id))) as TaskbarItem[][];
   trayItems = $derived(this.items.filter(item => item.is_definitely_tray));
 
@@ -72,7 +72,6 @@ export class TaskbarItemList {
       return this.icons[exePath];
     }
 
-    this.icons[exePath] = null;
     const res = await execAsync(`"${this.exePath}" get-executable-icon --path "${exePath}"`)
     res.stdout = res.stdout.trim();
     const json = JSON.parse(res.stdout);
@@ -80,6 +79,7 @@ export class TaskbarItemList {
       delete this.icons[exePath];
       return null;
     }
+
     this.icons[exePath] = json.icon_base64 as string;
     return json.icon_base64 as string;
   }
@@ -89,7 +89,6 @@ export class TaskbarItemList {
       return this.screenshots[hwnd].data;
     }
 
-    this.screenshots[hwnd] = { at: Date.now(), data: "", width: 0, height: 0 };
     const res = await execAsync(`"${this.exePath}" get-window-screenshot --hwnd ${hwnd} --size 256x256`);
     res.stdout = res.stdout.trim();
     const json = JSON.parse(res.stdout);
@@ -102,9 +101,12 @@ export class TaskbarItemList {
       return null;
     }
 
-    this.screenshots[hwnd].data = json.screenshot_base64 as string;
-    this.screenshots[hwnd].width = json.width as number;
-    this.screenshots[hwnd].height = json.height as number;
+    this.screenshots[hwnd] = {
+      at: Date.now(),
+      data: json.screenshot_base64 as string,
+      width: json.width,
+      height: json.height
+    };
 
     return json.screenshot_base64 as string;
   }

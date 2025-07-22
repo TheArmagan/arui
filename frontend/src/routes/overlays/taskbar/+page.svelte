@@ -14,6 +14,49 @@
 	} from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
+	import gsap from 'gsap';
+	import type { AnimationConfig } from 'svelte/animate';
+	import { fade } from 'svelte/transition';
+
+	function smoothMove(
+		node: HTMLElement,
+		{ from, to }: { from: DOMRect; to: DOMRect },
+		params: { duration?: number; delay?: number } = {}
+	): AnimationConfig {
+		const tl = gsap.timeline({
+			defaults: {
+				duration: params.duration || 0.3
+			},
+			onComplete: () => {
+				node.style.transform = '';
+			}
+		});
+
+		// Calculate the difference between old and new positions
+		const deltaX = from.left - to.left;
+		const deltaY = from.top - to.top;
+
+		tl.fromTo(
+			node,
+			{
+				x: deltaX,
+				y: deltaY
+			},
+			{
+				x: 0,
+				y: 0,
+				ease: 'power2.out'
+			}
+		);
+
+		return {
+			duration: (params.duration || 0.3) * 1000,
+			delay: (params.delay || 0) * 1000,
+			tick: (t) => {
+				tl.progress(t);
+			}
+		};
+	}
 
 	let shouldShowTaskbar = $state(false);
 	let isHovering = $state(false);
@@ -36,13 +79,9 @@
 			clearTimeout(hoverTimeout);
 			hoverTimeout = null;
 		}
-		if (value) {
-			isHovering = true;
-		} else {
-			hoverTimeout = setTimeout(() => {
-				isHovering = false;
-			}, delay);
-		}
+		hoverTimeout = setTimeout(() => {
+			isHovering = value;
+		}, delay);
 	}
 
 	onMount(() => {
@@ -52,16 +91,18 @@
 			const { x, y } = e.data;
 			let resetIgnore = false;
 			screens.forEach((screen) => {
-				if (y >= screen.bounds.height - 75) {
+				if (y >= screen.bounds.height - (shouldShowTaskbar ? 2 : 100)) {
 					shouldShowTaskbar = true;
 				} else {
+					if (!(y >= screen.bounds.height - 100)) {
+						openContextMenus = {};
+					}
 					if (!ignoreHideOnce) {
 						resetIgnore = true;
 						return;
 					}
 					if (!isHovering) {
 						shouldShowTaskbar = false;
-						generalContextMenuState = false;
 					}
 				}
 			});
@@ -76,13 +117,13 @@
 		return () => clearInterval(interval);
 	});
 
-	let generalContextMenuState = $state(false);
+	let openContextMenus: Record<string, boolean> = $state({});
 </script>
 
 <div class="relative flex h-[100vh] w-full items-end justify-center p-4 contain-content">
 	<MouseEventsCapturer
 		overlayId="taskbar"
-		class="bg-accent/85 absolute right-2 top-2 transform rounded-lg border px-4 py-2 text-sm font-semibold text-white shadow transition-all duration-300"
+		class="bg-background absolute right-2 top-2 transform rounded-lg border px-4 py-2 text-sm font-semibold text-white shadow transition-all duration-300"
 		onMouseEvent={(e) => {
 			e.preventDefault();
 			if (e.type === 'enter') {
@@ -109,143 +150,181 @@
 		class="{shouldShowTaskbar
 			? 'translate-y-0'
 			: 'translate-y-32'} w-full drop-shadow-[0_8px_12px_rgba(0,0,0,0.5)] transition-all duration-300"
+		onMouseEvent={(e) => {
+			if (e.type === 'enter') {
+				setHovering(true);
+			}
+		}}
 	>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<ContextMenu.Root
-			onOpenChange={(open) => (generalContextMenuState = open)}
-			open={generalContextMenuState}
+			onOpenChange={(open) => {
+				openContextMenus = { taskbar: open };
+				if (open) setHovering(true);
+			}}
+			open={openContextMenus['taskbar']}
 		>
 			<ContextMenu.Trigger>
 				<div
-					class="bg-accent/85 flex items-center justify-between gap-4 rounded-lg border p-2"
-					onmouseenter={() => setHovering(true)}
+					class="bg-background flex items-center justify-between gap-4 rounded-lg border p-2"
 					onmouseleave={() => {
 						setHoveringWithDelay(false, 100);
 						ignoreHideOnce = true;
 					}}
 				>
 					<div class="flex items-center gap-4 p-2">
-						{#each api.native.taskbarItemList.taskbarItemsGrouped as group}
+						{#each api.native.taskbarItemList.taskbarItemsGrouped as group, index (group[0].hwnd)}
 							{@const icon = api.native.taskbarItemList.icons[group[0].executable_path]}
 							{@const isFocused = group.some((item) => item.is_focused)}
 							{@const isRunning = group.some((item) => item.is_running)}
-							<Tooltip.Provider delayDuration={100} disableCloseOnTriggerClick={true}>
-								<Tooltip.Root>
-									<Tooltip.Trigger>
-										<button
-											class="{isFocused
-												? 'scale-105 opacity-100'
-												: 'opacity-50'} transition-all duration-300"
-											onclick={() => {
-												if (isRunning) {
-													let hwnd = group.find((i) => i.hwnd)?.hwnd;
-													if (!hwnd) return;
-													api.native.taskbarItemList.toggleFocusWindow(hwnd);
-													group.find((i) => i.hwnd)!.is_focused = true;
-												} else {
-													api.native.taskbarItemList.startExecutable(group[0].executable_path);
-												}
-											}}
-											onmouseenter={() => {
-												if (isRunning) {
-													group.forEach((item) => {
-														api.native.taskbarItemList.getWindowScreenshot(item.hwnd, true);
-													});
-												}
-											}}
-										>
-											<img
-												src={`data:image/png;base64,${icon}`}
-												class="h-8 w-8 cursor-pointer transition-all duration-300 hover:scale-110"
-												alt={group[0].title}
-											/>
-										</button>
-									</Tooltip.Trigger>
-									<Tooltip.Content
-										arrowClasses="hidden"
-										class="bg-accent hide-when-taskbar-hidden p-0 text-white"
-										sideOffset={24}
-										side="top"
-									>
-										<!-- svelte-ignore a11y_mouse_events_have_key_events -->
-										<MouseEventsCapturer
-											class="flex gap-4 p-4"
-											overlayId="taskbar"
-											onMouseEvent={(e) => {
-												if (e.type === 'leave') {
-													e.preventDefault();
-													setHoveringWithDelay(false, 100);
-													setTimeout(() => {
-														e.doDefault();
-														shouldShowTaskbar = false;
-													}, 100);
-												} else if (e.type === 'enter') {
-													setHovering(true);
-												}
-											}}
-										>
-											{#each group as item}
-												{@const screenshot = api.native.taskbarItemList.screenshots[item.hwnd]}
-												{@const icon = api.native.taskbarItemList.icons[item.executable_path]}
-												<!-- svelte-ignore a11y_click_events_have_key_events -->
-												<div
-													class="rounded-lg opacity-90 transition-all duration-300 hover:opacity-100"
-												>
-													<div class="mb-2 flex items-center justify-between gap-2">
-														<div class="flex items-center gap-2">
-															<img
-																src={`data:image/png;base64,${icon}`}
-																class="h-6 w-6"
-																alt={item.title}
-															/>
-															<span class="max-w-48 truncate text-sm font-semibold"
-																>{item.title}</span
-															>
-														</div>
-														<div class="flex items-center gap-2">
-															<!-- svelte-ignore a11y_click_events_have_key_events -->
-															<div
-																class="text-muted-foreground cursor-pointer hover:text-white"
-																onclick={() => {
-																	api.native.taskbarItemList.closeWindow(item.hwnd);
-																}}
-															>
-																<X size={16} />
-															</div>
-														</div>
-													</div>
-													<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-													<div
-														class="w-[256px] cursor-pointer"
+							<div class="flex" animate:smoothMove>
+								<Tooltip.Provider delayDuration={100} disableCloseOnTriggerClick={true}>
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											<ContextMenu.Root
+												onOpenChange={(open) => {
+													let ctxMenuId = `hwnd-${group[0].hwnd}`;
+													if (open) {
+														openContextMenus = { [ctxMenuId]: true };
+													} else {
+														delete openContextMenus[ctxMenuId];
+													}
+												}}
+												open={openContextMenus[`hwnd-${group[0].hwnd}`]}
+											>
+												<ContextMenu.Trigger>
+													<button
+														class="{isFocused
+															? 'scale-105 opacity-100'
+															: 'opacity-50'} transition-all duration-300"
 														onclick={() => {
-															api.native.taskbarItemList.toggleFocusWindow(item.hwnd);
-															shouldShowTaskbar = false;
-															setHovering(false);
+															if (isRunning) {
+																let hwnd = group.find((i) => i.hwnd)?.hwnd;
+																if (!hwnd) return;
+																api.native.taskbarItemList.toggleFocusWindow(hwnd);
+																group.find((i) => i.hwnd)!.is_focused = true;
+															} else {
+																api.native.taskbarItemList.startExecutable(
+																	group[0].executable_path
+																);
+															}
+														}}
+														onmouseenter={() => {
+															if (isRunning) {
+																group.forEach((item) => {
+																	api.native.taskbarItemList.getWindowScreenshot(item.hwnd, true);
+																});
+															}
 														}}
 													>
-														{#if screenshot?.data}
-															<img
-																src={`data:image/png;base64,${screenshot.data}`}
-																class="rounded"
-																alt={group[0].title}
-																draggable="false"
-															/>
-														{:else}
-															<div class="flex h-[128px] w-[256px] items-center justify-center">
-																<LoaderCircle
-																	class="text-muted-foreground animate-spin"
-																	size={24}
-																	aria-label="Loading screenshot"
+														<img
+															src={`data:image/png;base64,${icon}`}
+															class="h-8 w-8 cursor-pointer transition-all duration-300 hover:scale-110"
+															alt={group[0].title}
+														/>
+													</button>
+												</ContextMenu.Trigger>
+												<ContextMenu.Content>
+													<ContextMenu.Item
+														class="flex items-center gap-2"
+														onclick={() => {
+															group.forEach((item) => {
+																api.native.taskbarItemList.closeWindow(item.hwnd);
+															});
+														}}
+													>
+														<X size={16} />
+														<div class="max-w-64 truncate">Close all windows</div>
+													</ContextMenu.Item>
+												</ContextMenu.Content>
+											</ContextMenu.Root>
+										</Tooltip.Trigger>
+										<Tooltip.Content
+											arrowClasses="hidden"
+											class="bg-accent hide-when-taskbar-hidden p-0 text-white"
+											sideOffset={24}
+											side="top"
+										>
+											<!-- svelte-ignore a11y_mouse_events_have_key_events -->
+											<MouseEventsCapturer
+												class="flex gap-4 p-4"
+												overlayId="taskbar"
+												onMouseEvent={(e) => {
+													if (e.type === 'leave') {
+														e.preventDefault();
+														setHoveringWithDelay(false, 100);
+														setTimeout(() => {
+															e.doDefault();
+															shouldShowTaskbar = false;
+														}, 100);
+													} else if (e.type === 'enter') {
+														setHovering(true);
+													}
+												}}
+											>
+												{#each group as item}
+													{@const screenshot = api.native.taskbarItemList.screenshots[item.hwnd]}
+													{@const icon = api.native.taskbarItemList.icons[item.executable_path]}
+													<!-- svelte-ignore a11y_click_events_have_key_events -->
+													<div
+														class="rounded-lg opacity-90 transition-all duration-300 hover:opacity-100"
+													>
+														<div class="mb-2 flex items-center justify-between gap-2">
+															<div class="flex items-center gap-2">
+																<img
+																	src={`data:image/png;base64,${icon}`}
+																	class="h-6 w-6"
+																	alt={item.title}
 																/>
+																<span class="max-w-48 truncate text-sm font-semibold"
+																	>{item.title}</span
+																>
 															</div>
-														{/if}
+															<div class="flex items-center gap-2">
+																<!-- svelte-ignore a11y_click_events_have_key_events -->
+																<div
+																	class="text-muted-foreground cursor-pointer hover:text-white"
+																	onclick={() => {
+																		api.native.taskbarItemList.closeWindow(item.hwnd);
+																	}}
+																>
+																	<X size={16} />
+																</div>
+															</div>
+														</div>
+														<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+														<div
+															class="w-[256px] cursor-pointer"
+															onclick={() => {
+																api.native.taskbarItemList.toggleFocusWindow(item.hwnd);
+																shouldShowTaskbar = false;
+																setHovering(false);
+															}}
+														>
+															{#if screenshot?.data}
+																<img
+																	src={`data:image/png;base64,${screenshot.data}`}
+																	class="rounded"
+																	alt={group[0].title}
+																	draggable="false"
+																/>
+															{:else}
+																<div class="flex h-[128px] w-[256px] items-center justify-center">
+																	<LoaderCircle
+																		class="text-muted-foreground animate-spin"
+																		size={24}
+																		aria-label="Loading screenshot"
+																	/>
+																</div>
+															{/if}
+														</div>
 													</div>
-												</div>
-											{/each}
-										</MouseEventsCapturer>
-									</Tooltip.Content>
-								</Tooltip.Root>
-							</Tooltip.Provider>
+												{/each}
+											</MouseEventsCapturer>
+										</Tooltip.Content>
+									</Tooltip.Root>
+								</Tooltip.Provider>
+							</div>
 						{/each}
 					</div>
 					<div
@@ -311,7 +390,7 @@
 					</div>
 				</div>
 			</ContextMenu.Trigger>
-			<ContextMenu.Content>
+			<ContextMenu.Content onmousemove={() => setHovering(true)}>
 				<ContextMenu.Item
 					class="flex items-center gap-2"
 					onclick={() => {

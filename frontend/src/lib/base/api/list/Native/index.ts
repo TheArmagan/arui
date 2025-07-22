@@ -1,5 +1,5 @@
 import type { ARUIAPI } from "$lib/base/api/ARUIAPI";
-import { KeyListener } from "./KeyListener";
+import { KeyListener } from "./KeyListener.svelte";
 import { MediaInfo } from "./MediaInfo.svelte";
 import { TaskbarItemList } from "./TaskbarItemList.svelte";
 
