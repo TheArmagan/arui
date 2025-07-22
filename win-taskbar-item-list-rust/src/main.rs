@@ -99,6 +99,8 @@ enum Commands {
         #[arg(long)]
         path: String,
     },
+    /// Open Windows Start Menu
+    OpenStartMenu,
     /// Monitor taskbar items (default action)
     Monitor,
 }
@@ -717,6 +719,21 @@ impl TaskbarMonitor {
 
             // ShellExecuteW 32'den büyük bir değer döndürürse başarılı
             result as isize > 32
+        }
+    }
+
+    fn open_start_menu() -> bool {
+        unsafe {
+            // Windows Start Menu'yu açmak için Windows tuşuna basma simülasyonu
+            // VK_LWIN (Left Windows key) = 0x5B
+            const VK_LWIN: u8 = 0x5B;
+
+            // Tuşa bas
+            keybd_event(VK_LWIN, 0, 0, 0);
+            // Tuşu bırak
+            keybd_event(VK_LWIN, 0, 2, 0); // KEYEVENTF_KEYUP = 2
+
+            true
         }
     }
 
@@ -1359,6 +1376,23 @@ async fn main() {
                     "success": false,
                     "path": path,
                     "error": "Could not start executable"
+                });
+                println!("{}", response);
+            }
+        }
+        Some(Commands::OpenStartMenu) => {
+            // Windows Start Menu'yu aç
+            if TaskbarMonitor::open_start_menu() {
+                let response = serde_json::json!({
+                    "success": true,
+                    "action": "open_start_menu",
+                    "message": "Start menu opened successfully"
+                });
+                println!("{}", response);
+            } else {
+                let response = serde_json::json!({
+                    "success": false,
+                    "error": "Could not open start menu"
                 });
                 println!("{}", response);
             }

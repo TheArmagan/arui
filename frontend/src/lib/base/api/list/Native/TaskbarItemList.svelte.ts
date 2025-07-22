@@ -116,6 +116,9 @@ export class TaskbarItemList {
     return json.screenshot_base64 as string;
   }
 
+  async openStartMenu() {
+    await execAsync(`"${this.exePath}" open-start-menu`);
+  }
   async minimizeWindow(hwnd: number) {
     await execAsync(`"${this.exePath}" minimize-window --hwnd ${hwnd}`);
   }

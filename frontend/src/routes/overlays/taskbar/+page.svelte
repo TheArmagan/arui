@@ -10,6 +10,8 @@
 		Settings,
 		SkipBack,
 		SkipForward,
+		Terminal,
+		TrainTrack,
 		X
 	} from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
@@ -172,6 +174,49 @@
 					}}
 				>
 					<div class="flex items-center gap-4 p-2">
+						<ContextMenu.Root
+							onOpenChange={(open) => {
+								if (open) {
+									openContextMenus = { startMenu: true };
+								} else {
+									delete openContextMenus.startMenu;
+								}
+							}}
+							open={openContextMenus.startMenu}
+						>
+							<ContextMenu.Trigger>
+								<button
+									class="hover:bg-muted text-muted-foreground flex h-10 w-10 min-w-10 cursor-pointer items-center justify-center rounded-full border transition-all duration-300 hover:text-white"
+									onclick={() => {
+										api.native.taskbarItemList.openStartMenu();
+										ignoreHideOnce = true;
+									}}
+								>
+									<TrainTrack size={24} />
+								</button>
+							</ContextMenu.Trigger>
+							<ContextMenu.Content>
+								<ContextMenu.Item
+									class="flex items-center gap-2"
+									onclick={() => {
+										api.native.taskbarItemList.startExecutable('cmd.exe');
+									}}
+								>
+									<Terminal size={16} />
+									<div class="max-w-64 truncate">Terminal</div>
+								</ContextMenu.Item>
+								<ContextMenu.Item
+									class="flex items-center gap-2"
+									onclick={() => {
+										api.native.taskbarItemList.startExecutable('taskmgr.exe');
+									}}
+								>
+									<LayoutList size={16} />
+									Task Manager
+								</ContextMenu.Item>
+							</ContextMenu.Content>
+						</ContextMenu.Root>
+						<div class="bg-border h-12 w-0.5 min-w-0.5 rounded-full"></div>
 						{#each api.native.taskbarItemList.taskbarItemsGrouped as group, index (group[0].hwnd)}
 							{@const icon = api.native.taskbarItemList.icons[group[0].executable_path]}
 							{@const isFocused = group.some((item) => item.is_focused)}
@@ -191,7 +236,7 @@
 												}}
 												open={openContextMenus[`hwnd-${group[0].hwnd}`]}
 											>
-												<ContextMenu.Trigger>
+												<ContextMenu.Trigger class="flex">
 													<button
 														class="{isFocused
 															? 'scale-105 opacity-100'
@@ -327,70 +372,73 @@
 							</div>
 						{/each}
 					</div>
-					<div
-						class="flex h-14 w-64 select-none rounded-lg drop-shadow-[0_0_4px_rgba(0,0,0,0.5)] transition-all duration-300 contain-content"
-						style="background-image: url('data:image/png;base64,{api.native.mediaInfo
-							.artwork}'); background-size: cover; background-position: center;"
-					>
+					<div class="flex items-center gap-4">
+						<div class="bg-border h-12 w-0.5 min-w-0.5 rounded-full"></div>
 						<div
-							class="backdrop-blur-xs flex h-14 w-64 items-center justify-between p-1 backdrop-brightness-50"
+							class="flex h-14 w-64 select-none rounded-lg drop-shadow-[0_0_4px_rgba(0,0,0,0.5)] transition-all duration-300 contain-content"
+							style="background-image: url('data:image/png;base64,{api.native.mediaInfo
+								.artwork}'); background-size: cover; background-position: center;"
 						>
 							<div
-								class="flex w-full items-center justify-between gap-1 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]"
+								class="backdrop-blur-xs flex h-14 w-64 items-center justify-between p-1 backdrop-brightness-50"
 							>
-								<div class="flex w-full items-center gap-2">
-									<div
-										class="h-12 w-12 min-w-12 rounded-lg transition-all duration-300"
-										style="background-image: url('data:image/png;base64,{api.native.mediaInfo
-											.artwork}'); background-size: cover; background-position: center;"
-									></div>
-									<div class="flex flex-col justify-center gap-1">
-										<div class="flex w-full flex-col gap-1">
-											<span class="max-w-30 truncate text-sm font-semibold leading-none">
-												{api.native.mediaInfo.media?.title || 'No Media Playing'}
-											</span>
-											<span class="text-muted-foreground max-w-30 truncate text-xs">
-												{api.native.mediaInfo.media?.artist || 'Unknown Artist'}
-											</span>
+								<div
+									class="flex w-full items-center justify-between gap-1 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]"
+								>
+									<div class="flex w-full items-center gap-2">
+										<div
+											class="h-12 w-12 min-w-12 rounded-lg transition-all duration-300"
+											style="background-image: url('data:image/png;base64,{api.native.mediaInfo
+												.artwork}'); background-size: cover; background-position: center;"
+										></div>
+										<div class="flex flex-col justify-center gap-1">
+											<div class="flex w-full flex-col gap-1">
+												<span class="max-w-30 truncate text-sm font-semibold leading-none">
+													{api.native.mediaInfo.media?.title || 'No Media Playing'}
+												</span>
+												<span class="text-muted-foreground max-w-30 truncate text-xs">
+													{api.native.mediaInfo.media?.artist || 'Unknown Artist'}
+												</span>
+											</div>
 										</div>
 									</div>
-								</div>
-								<div class="flex h-12 w-16 min-w-16 items-center justify-between">
-									<button
-										onclick={() => {
-											api.native.mediaInfo.previousTrack();
-										}}
-										class="text-muted-foreground cursor-pointer transition-all duration-300 hover:text-white"
-									>
-										<SkipBack size={20} />
-									</button>
-									<button
-										onclick={() => {
-											api.native.mediaInfo.togglePlayPause();
-										}}
-										class="text-muted-foreground cursor-pointer transition-all duration-300 hover:text-white"
-									>
-										{#if api.native.mediaInfo.media?.playback_status === 'Playing'}
-											<Pause size={20} />
-										{:else}
-											<Play size={20} />
-										{/if}
-									</button>
-									<button
-										onclick={() => {
-											api.native.mediaInfo.skipTrack();
-										}}
-										class="text-muted-foreground cursor-pointer transition-all duration-300 hover:text-white"
-									>
-										<SkipForward size={20} />
-									</button>
+									<div class="flex h-12 w-16 min-w-16 items-center justify-between">
+										<button
+											onclick={() => {
+												api.native.mediaInfo.previousTrack();
+											}}
+											class="text-muted-foreground cursor-pointer transition-all duration-300 hover:text-white"
+										>
+											<SkipBack size={20} />
+										</button>
+										<button
+											onclick={() => {
+												api.native.mediaInfo.togglePlayPause();
+											}}
+											class="text-muted-foreground cursor-pointer transition-all duration-300 hover:text-white"
+										>
+											{#if api.native.mediaInfo.media?.playback_status === 'Playing'}
+												<Pause size={20} />
+											{:else}
+												<Play size={20} />
+											{/if}
+										</button>
+										<button
+											onclick={() => {
+												api.native.mediaInfo.skipTrack();
+											}}
+											class="text-muted-foreground cursor-pointer transition-all duration-300 hover:text-white"
+										>
+											<SkipForward size={20} />
+										</button>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</ContextMenu.Trigger>
-			<ContextMenu.Content onmousemove={() => setHovering(true)}>
+			<ContextMenu.Content>
 				<ContextMenu.Item
 					class="flex items-center gap-2"
 					onclick={() => {
