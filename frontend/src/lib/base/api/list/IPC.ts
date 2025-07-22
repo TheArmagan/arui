@@ -35,4 +35,8 @@ export class IPC {
   async bringOverlayWindowToFront(id: string) {
     return await this.client.invoke("BringOverlayWindowToFront", id);
   }
+
+  quit() {
+    this.client.send("Quit");
+  }
 }

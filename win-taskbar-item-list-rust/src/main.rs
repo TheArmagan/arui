@@ -292,7 +292,7 @@ impl TaskbarMonitor {
         }
     }
 
-    fn get_window_screenshot_as_base64(hwnd: i32, size_str: &str) -> Option<String> {
+    fn get_window_screenshot_as_base64(hwnd: i32, size_str: &str) -> Option<(String, i32, i32)> {
         unsafe {
             let hwnd = hwnd as HWND;
 
@@ -424,7 +424,7 @@ impl TaskbarMonitor {
                                 ReleaseDC(hwnd, hdc_window);
                                 ReleaseDC(null_mut(), hdc_screen);
 
-                                return Some(base64_string);
+                                return Some((base64_string, target_width, target_height));
                             }
                         }
                     }
@@ -1166,13 +1166,15 @@ async fn main() {
         Some(Commands::GetWindowScreenshot { hwnd, size }) => {
             // Pencere screenshot alma modu
             match TaskbarMonitor::get_window_screenshot_as_base64(hwnd, &size) {
-                Some(base64_screenshot) => {
+                Some((base64_screenshot, width, height)) => {
                     let response = serde_json::json!({
                         "success": true,
                         "hwnd": hwnd,
                         "screenshot_base64": base64_screenshot,
                         "format": "PNG",
-                        "max_size": size
+                        "max_size": size,
+                        "width": width,
+                        "height": height
                     });
                     println!("{}", response);
                 }

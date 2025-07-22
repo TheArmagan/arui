@@ -33,12 +33,12 @@ export interface TaskbarItem {
 
 export class TaskbarItemList {
   items = $state<TaskbarItem[]>([]);
-  taskbarItems = $derived(this.items.filter(item => !item.is_system_window && item.is_definitely_taskbar));
+  taskbarItems = $derived(this.items.filter(item => item.is_definitely_taskbar && item.title));
   taskbarItemsGrouped = $derived(Object.values(Object.groupBy(this.taskbarItems, item => item.process_id))) as TaskbarItem[][];
-  trayItems = $derived(this.items.filter(item => !item.is_system_window && item.is_definitely_tray));
+  trayItems = $derived(this.items.filter(item => item.is_definitely_tray));
 
   icons: Record<string, string | null> = $state({});
-  screenshots: Record<number, { at: number, data: string }> = $state({});
+  screenshots: Record<number, { at: number, data: string, width: number, height: number }> = $state({});
 
   exePath!: string;
   process: import("child_process").ChildProcessWithoutNullStreams | null = null;
@@ -89,7 +89,7 @@ export class TaskbarItemList {
       return this.screenshots[hwnd].data;
     }
 
-    this.screenshots[hwnd] = { at: Date.now(), data: "" };
+    this.screenshots[hwnd] = { at: Date.now(), data: "", width: 0, height: 0 };
     const res = await execAsync(`"${this.exePath}" get-window-screenshot --hwnd ${hwnd} --size 256x256`);
     res.stdout = res.stdout.trim();
     const json = JSON.parse(res.stdout);
@@ -97,7 +97,15 @@ export class TaskbarItemList {
       delete this.screenshots[hwnd];
       return null;
     }
+
+    if (json.width < 50 || json.height < 50) {
+      return null;
+    }
+
     this.screenshots[hwnd].data = json.screenshot_base64 as string;
+    this.screenshots[hwnd].width = json.width as number;
+    this.screenshots[hwnd].height = json.height as number;
+
     return json.screenshot_base64 as string;
   }
 
