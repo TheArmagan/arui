@@ -16,7 +16,6 @@
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
 	import gsap from 'gsap';
 	import type { AnimationConfig } from 'svelte/animate';
-	import { fade } from 'svelte/transition';
 
 	function smoothMove(
 		node: HTMLElement,
@@ -221,6 +220,7 @@
 															src={`data:image/png;base64,${icon}`}
 															class="h-8 w-8 cursor-pointer transition-all duration-300 hover:scale-110"
 															alt={group[0].title}
+															draggable="false"
 														/>
 													</button>
 												</ContextMenu.Trigger>
@@ -254,7 +254,7 @@
 														e.preventDefault();
 														setHoveringWithDelay(false, 100);
 														setTimeout(() => {
-															e.doDefault();
+															// e.doDefault();
 															shouldShowTaskbar = false;
 														}, 100);
 													} else if (e.type === 'enter') {

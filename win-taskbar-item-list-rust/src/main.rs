@@ -1045,21 +1045,44 @@ unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: isize) -> i32 {
                 || class_name == "tooltips_class32"
                 || (!is_visible && !is_minimized && process_id > 0);
 
-            // Kesin filtreleme için yeni alanlar
-            let is_definitely_taskbar = has_taskbar_button
-                && (is_visible || is_minimized)
-                && (ex_style & WS_EX_TOOLWINDOW) == 0
-                && !class_name.contains("NotifyIcon");
+            // Daha akıllı taskbar ve tray tespiti
+            let is_definitely_taskbar = if is_pinned && hwnd.is_null() {
+                // Pinned itemlar her zaman taskbar'da görünür (çalışmasalar bile)
+                true
+            } else {
+                // Normal pencereler için mevcut mantık + iyileştirmeler
+                has_taskbar_button
+                    && (is_visible || is_minimized)
+                    && (ex_style & WS_EX_TOOLWINDOW) == 0
+                    && !class_name.contains("NotifyIcon")
+                    && !class_name.contains("TrayNotify")
+                    // Bazı özel durumları filtrele
+                    && !(class_name == "Shell_TrayWnd")  // Windows taskbar
+                    && !(class_name == "Progman")        // Desktop
+                    && !(class_name == "WorkerW")        // Desktop worker
+                    && !(title.is_empty() && process_name.to_lowercase() == "explorer.exe" && !is_minimized)
+                // Boş explorer pencereleri
+            };
 
             let is_definitely_tray = (ex_style & WS_EX_TOOLWINDOW) != 0
                 || class_name.contains("NotifyIcon")
                 || class_name.contains("TrayNotify")
-                || (!has_taskbar_button && !title.is_empty());
+                || class_name == "Shell_TrayWnd"
+                || (!has_taskbar_button && !title.is_empty() && is_visible);
 
-            // Sistem penceresi kontrolü
+            // Daha detaylı sistem penceresi kontrolü
             let is_system_window = match process_name.to_lowercase().as_str() {
-                "explorer.exe" | "dwm.exe" | "winlogon.exe" | "csrss.exe" | "wininit.exe"
-                | "services.exe" | "lsass.exe" | "svchost.exe" => true,
+                "dwm.exe" | "winlogon.exe" | "csrss.exe" | "wininit.exe" | "services.exe"
+                | "lsass.exe" | "svchost.exe" => true,
+                "explorer.exe" => {
+                    // Explorer için daha spesifik kontrol
+                    title.is_empty()
+                        || class_name == "Progman"
+                        || class_name == "WorkerW"
+                        || class_name == "Shell_TrayWnd"
+                        || class_name == "Shell_SecondaryTrayWnd"
+                        || title == "Program Manager"
+                }
                 _ => false,
             };
 

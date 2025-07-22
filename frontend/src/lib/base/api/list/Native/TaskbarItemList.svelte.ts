@@ -33,7 +33,7 @@ export interface TaskbarItem {
 
 export class TaskbarItemList {
   items = $state<TaskbarItem[]>([]);
-  taskbarItems = $derived(this.items.filter(item => item.is_definitely_taskbar && item.title && item.process_name !== 'File Explorer.exe'));
+  taskbarItems = $derived(this.items.filter(item => item.is_definitely_taskbar && item.title && item.hwnd));
   taskbarItemsGrouped = $derived(Object.values(Object.groupBy(this.taskbarItems, item => item.process_id))) as TaskbarItem[][];
   trayItems = $derived(this.items.filter(item => item.is_definitely_tray));
 
@@ -85,6 +85,11 @@ export class TaskbarItemList {
   }
 
   async getWindowScreenshot(hwnd: number, force: boolean = false): Promise<string | null> {
+    // HWND 0 olan itemlar için screenshot alınamaz
+    if (hwnd === 0) {
+      return null;
+    }
+
     if (this.screenshots[hwnd] && !force && (Date.now() - this.screenshots[hwnd].at < 15000)) {
       return this.screenshots[hwnd].data;
     }
@@ -168,14 +173,13 @@ export class TaskbarItemList {
             if (item.is_definitely_taskbar || item.is_definitely_tray) {
               this.getExecutableImage(item.executable_path);
             }
-            if (item.is_definitely_taskbar) {
+            // Sadece HWND'si 0'dan farklı olan taskbar itemları için screenshot al
+            if (item.is_definitely_taskbar && item.hwnd !== 0) {
               this.getWindowScreenshot(item.hwnd);
             }
           });
         }
-      });
-
-      process.once("error", (err) => {
+      }); process.once("error", (err) => {
         this.native.api.logger.error("TastkbarItemMessage", `Listener error: ${err}`);
       });
 

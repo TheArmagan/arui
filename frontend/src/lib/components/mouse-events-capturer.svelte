@@ -12,7 +12,7 @@
 		overlayId: string;
 		class?: string;
 		onMouseEvent?: (o: {
-			type: 'enter' | 'leave';
+			type: 'enter' | 'leave' | 'move';
 			preventDefault(): void;
 			doDefault(): void;
 			target: HTMLDivElement;
@@ -72,6 +72,12 @@
 					handleMouseLeave();
 				}
 			}
+			onMouseEvent?.({
+				type: 'move',
+				preventDefault: () => {},
+				doDefault: () => {},
+				target: container!
+			});
 		});
 	});
 
