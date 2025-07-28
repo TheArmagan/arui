@@ -147,7 +147,7 @@ async function createApp() {
     if (path && path.startsWith("/")) path = path.slice(1);
     if (path && path.endsWith("/")) path = path.slice(0, -1);
     if (isDev) {
-      win.loadURL(`http://localhost:5173/${path}`);
+      win.loadURL(`http://localhost:5169/${path}`);
     } else {
       win.loadFile(`./build/${path}/index.html`.replace(/\/\//g, '/'));
     }
@@ -328,7 +328,7 @@ async function createApp() {
   });
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:5169');
   } else {
     mainWindow.loadFile('./build/index.html');
   }
