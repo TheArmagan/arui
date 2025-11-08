@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-require-imports */
 const path = require("path") as typeof import("path");
 const cp = require("child_process") as typeof import("child_process");
@@ -57,7 +58,7 @@ export class TaskbarItemList {
           delete this.screenshots[Number(hwnd)];
         }
       });
-    }), 1000;
+    }, 1000);
   }
 
   async destroy() {
@@ -158,7 +159,7 @@ export class TaskbarItemList {
     try {
       const jsonStream = new JSONStream();
 
-      let process = cp.spawn(this.exePath, {
+      const process = cp.spawn(this.exePath, {
         cwd: path.dirname(this.exePath),
       });
 

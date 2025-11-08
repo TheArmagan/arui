@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { api } from '@/base/api';
-	import MouseEventsCapturer from '@/components/mouse-events-capturer.svelte';
+	import MouseEventsCapturer from '@/components/mouse-events-capturer/mouse-events-capturer.svelte';
 	import { onMount } from 'svelte';
 	import {
 		LayoutList,
@@ -63,34 +63,11 @@
 	let isHovering = $state(false);
 	let now = $state(new Date());
 
-	let ignoreHideOnce = $state(false);
-	let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
-
-	// Helper functions for hover management
-	function setHovering(value: boolean) {
-		if (hoverTimeout) {
-			clearTimeout(hoverTimeout);
-			hoverTimeout = null;
-		}
-		isHovering = value;
-	}
-
-	function setHoveringWithDelay(value: boolean, delay: number) {
-		if (hoverTimeout) {
-			clearTimeout(hoverTimeout);
-			hoverTimeout = null;
-		}
-		hoverTimeout = setTimeout(() => {
-			isHovering = value;
-		}, delay);
-	}
-
 	onMount(() => {
 		let screens = api.ipc.getScreens();
 		return api.events.on('KeyListenerMessage', (e) => {
 			if (e.mode !== 'mouse' || e.data.event_type !== 'move') return;
 			const { x, y } = e.data;
-			let resetIgnore = false;
 			screens.forEach((screen) => {
 				if (y >= screen.bounds.height - (shouldShowTaskbar ? 2 : 100)) {
 					shouldShowTaskbar = true;
@@ -98,16 +75,11 @@
 					if (!(y >= screen.bounds.height - 100)) {
 						openContextMenus = {};
 					}
-					if (!ignoreHideOnce) {
-						resetIgnore = true;
-						return;
-					}
 					if (!isHovering) {
 						shouldShowTaskbar = false;
 					}
 				}
 			});
-			if (resetIgnore) ignoreHideOnce = false;
 		});
 	});
 
@@ -166,7 +138,9 @@
 			: 'translate-y-32'} w-full drop-shadow-[0_8px_12px_rgba(0,0,0,0.5)] transition-all duration-300"
 		onMouseEvent={(e) => {
 			if (e.type === 'enter') {
-				setHovering(true);
+				isHovering = true;
+			} else if (e.type === 'leave') {
+				isHovering = false;
 			}
 		}}
 	>
@@ -174,18 +148,11 @@
 		<ContextMenu.Root
 			onOpenChange={(open) => {
 				openContextMenus = { taskbar: open };
-				if (open) setHovering(true);
 			}}
 			open={openContextMenus['taskbar']}
 		>
 			<ContextMenu.Trigger>
-				<div
-					class="bg-background flex items-center justify-between gap-4 rounded-lg border p-2"
-					onmouseleave={() => {
-						setHoveringWithDelay(false, 100);
-						ignoreHideOnce = true;
-					}}
-				>
+				<div class="bg-background flex items-center justify-between gap-4 rounded-lg border p-2">
 					<div class="flex items-center gap-4 p-2">
 						<ContextMenu.Root
 							onOpenChange={(open) => {
@@ -202,7 +169,6 @@
 									class="hover:bg-muted text-muted-foreground flex h-10 w-10 min-w-10 cursor-pointer items-center justify-center rounded-full border transition-all duration-300 hover:text-white"
 									onclick={() => {
 										api.native.taskbarItemList.openStartMenu();
-										ignoreHideOnce = true;
 									}}
 								>
 									<TrainTrack size={24} />
@@ -302,22 +268,16 @@
 											class="bg-accent hide-when-taskbar-hidden p-0 text-white"
 											sideOffset={32}
 											side="top"
-											onmousemove={() => setHovering(true)}
 										>
-											<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 											<MouseEventsCapturer
 												class="flex gap-4 p-4"
 												overlayId="taskbar"
 												onMouseEvent={(e) => {
-													if (e.type === 'leave') {
-														e.preventDefault();
-														setHoveringWithDelay(false, 100);
-														setTimeout(() => {
-															e.doDefault();
-															shouldShowTaskbar = false;
-														}, 100);
-													} else if (e.type === 'enter') {
-														setHovering(true);
+													if (e.type === 'enter') {
+														isHovering = true;
+													} else if (e.type === 'leave') {
+														isHovering = false;
+														shouldShowTaskbar = false;
 													}
 												}}
 											>
@@ -357,7 +317,6 @@
 															onclick={() => {
 																api.native.taskbarItemList.toggleFocusWindow(item.hwnd);
 																shouldShowTaskbar = false;
-																setHovering(false);
 															}}
 														>
 															{#if screenshot?.data}
