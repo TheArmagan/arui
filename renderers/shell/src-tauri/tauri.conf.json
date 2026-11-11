@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "ARUI",
+  "version": "0.1.0",
+  "identifier": "rest.armagan.arui",
+  "build": {
+    "devUrl": "http://localhost:5169",
+    "frontendDist": "../../ui/dist",
+    "beforeDevCommand": "pnpm --filter @arui/ui dev",
+    "beforeBuildCommand": "pnpm --filter @arui/ui build"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "host",
+        "title": "ARUI Host",
+        "url": "index.html?surface=host",
+        "visible": false,
+        "width": 400,
+        "height": 300
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.png", "icons/icon.ico"]
+  }
+}

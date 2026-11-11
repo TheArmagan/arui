@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "ARUI surfaces (all windows). Mods are fully trusted, so every window gets the core permissions.",
+  "windows": ["*"],
+  "permissions": ["core:default", "core:window:default", "core:webview:default", "core:event:default"]
+}

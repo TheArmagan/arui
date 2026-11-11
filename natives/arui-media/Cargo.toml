@@ -1,0 +1,25 @@
+[package]
+name = "arui-media"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Event-driven GSMTC media sessions for ARUI"
+
+[dependencies]
+arui-win.workspace = true
+serde.workspace = true
+log.workspace = true
+parking_lot.workspace = true
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+windows = { workspace = true, features = [
+    "Foundation",
+    "Foundation_Collections",
+    "Media_Control",
+    "Storage_Streams",
+    "Win32_Foundation",
+    "Win32_System_Com",
+] }
+windows-core.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

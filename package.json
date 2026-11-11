@@ -1,0 +1,13 @@
+{
+  "name": "arui",
+  "private": true,
+  "version": "0.1.0",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "dev": "cargo build -p arui-guard && pnpm --filter @arui/shell dev",
+    "dev:ui": "pnpm --filter @arui/ui dev",
+    "build": "cargo build --release -p arui-guard && pnpm --filter @arui/shell build",
+    "check": "pnpm -r check"
+  },
+  "packageManager": "pnpm@11.10.0"
+}

@@ -1,0 +1,10 @@
+[package]
+name = "arui-guard"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Watchdog that restores explorer's taskbar and the work area if ARUI dies"
+
+[dependencies]
+arui-shell = { path = "../arui-shell" }
+windows = { workspace = true, features = ["Win32_Foundation", "Win32_System_Threading"] }

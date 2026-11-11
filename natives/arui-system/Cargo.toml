@@ -1,0 +1,27 @@
+[package]
+name = "arui-system"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Volume and network state (event driven) for ARUI"
+
+[dependencies]
+arui-win.workspace = true
+serde.workspace = true
+log.workspace = true
+parking_lot.workspace = true
+windows = { workspace = true, features = [
+    "Foundation",
+    "Foundation_Collections",
+    "Networking_Connectivity",
+    "Win32_Foundation",
+    "Win32_Media_Audio",
+    "Win32_Media_Audio_Endpoints",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Variant",
+] }
+windows-core.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

@@ -1,0 +1,14 @@
+{
+  "name": "create-arui-mod",
+  "version": "0.1.0",
+  "description": "Scaffold an ARUI mod (Svelte 5 + Vite library build)",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "bin": {
+    "create-arui-mod": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "template"
+  ]
+}

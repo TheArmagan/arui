@@ -1,0 +1,12 @@
+packages:
+  - renderers/*
+  - examples/mods/*
+allowBuilds:
+  esbuild: true
+  "@tauri-apps/cli": true
+minimumReleaseAgeExclude:
+  - '@lucide/svelte@1.71.0'
+  - lucide@1.71.0
+onlyBuiltDependencies:
+  - esbuild
+  - "@tauri-apps/cli"

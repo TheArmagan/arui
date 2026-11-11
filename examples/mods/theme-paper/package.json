@@ -1,0 +1,20 @@
+{
+  "name": "theme-paper",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "dev": "vite build --watch --mode deploy",
+    "check": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@arui/sdk": "workspace:*",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "svelte": "5.57.3",
+    "svelte-check": "^4.7.8",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.7"
+  }
+}

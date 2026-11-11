@@ -1,0 +1,34 @@
+[package]
+name = "arui-windows"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Event-driven taskbar window tracker, app identity, icons, window actions and DWM thumbnails"
+
+[dependencies]
+arui-win.workspace = true
+serde.workspace = true
+log.workspace = true
+parking_lot.workspace = true
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Dwm",
+    "Win32_Graphics_Gdi",
+    "Win32_Storage_EnhancedStorage",
+    "Win32_Storage_FileSystem",
+    "Win32_Storage_Packaging_Appx",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_System_Variant",
+    "Win32_UI_Accessibility",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_Common",
+    "Win32_UI_Shell_PropertiesSystem",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[dev-dependencies]
+serde_json.workspace = true

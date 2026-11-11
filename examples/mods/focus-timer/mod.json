@@ -1,0 +1,10 @@
+{
+  "id": "focus-timer",
+  "name": "Focus timer",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "description": "Pomodoro-style countdown in the taskbar, with settings and a taskbar context menu entry.",
+  "author": "ARUI examples",
+  "entry": "dist/index.js",
+  "styles": ["dist/style.css"]
+}

@@ -1,0 +1,30 @@
+[package]
+name = "arui-shell-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "ARUI host: Tauri app that wires natives to the UI"
+
+[[bin]]
+name = "arui"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+arui-win.workspace = true
+parking_lot.workspace = true
+notify = "8"
+percent-encoding = "2"
+tauri-plugin-single-instance = "2"
+arui-windows.workspace = true
+arui-shell.workspace = true
+arui-tray.workspace = true
+arui-media.workspace = true
+arui-system.workspace = true
+env_logger = "0.11"
