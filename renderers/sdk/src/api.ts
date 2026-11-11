@@ -86,6 +86,10 @@ export interface AruiState {
 
 export interface AruiActions {
 	focusWindow(hwnd: Hwnd): Promise<void>;
+	/** Shows a window in front without activating it (hover peek). One peek at a time. */
+	peekWindow(hwnd: Hwnd): Promise<void>;
+	/** Ends the peek: `restore` puts the window back where it was, otherwise it stays in front. */
+	unpeekWindow(restore?: boolean): Promise<void>;
 	toggleWindow(hwnd: Hwnd): Promise<void>;
 	minimizeWindow(hwnd: Hwnd): Promise<void>;
 	maximizeWindow(hwnd: Hwnd): Promise<void>;
@@ -108,8 +112,11 @@ export interface AruiActions {
 	setVolume(level: number): Promise<void>;
 	setMuted(muted: boolean): Promise<void>;
 
-	/** Live window thumbnail drawn into this window at `rect` (CSS px, window-relative). */
-	showPreview(hwnd: Hwnd, rect: Rect): Promise<void>;
+	/**
+	 * Live window thumbnail drawn into this window at `rect` (CSS px, window-relative),
+	 * aspect-fit. Resolves with the source window's size (physical px) for sizing the box.
+	 */
+	showPreview(hwnd: Hwnd, rect: Rect): Promise<{ width: number; height: number }>;
 	hidePreview(hwnd?: Hwnd): Promise<void>;
 
 	quit(): Promise<void>;

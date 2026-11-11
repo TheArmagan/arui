@@ -27,7 +27,15 @@ export default defineMod({
 		ctx.settings.define({
 			title: 'Window previews',
 			fields: [
-				{ key: 'delay', label: 'Hover delay (ms)', type: 'number', default: 350, min: 0, max: 2000, step: 50 }
+				{ key: 'delay', label: 'Hover delay (ms)', type: 'number', default: 350, min: 0, max: 2000, step: 50 },
+				{
+					key: 'peek',
+					label: 'Peek at windows',
+					description: 'Holding the pointer on a preview shows that window; leaving puts it back, clicking keeps it.',
+					type: 'boolean',
+					default: true
+				},
+				{ key: 'peekDelay', label: 'Peek delay (ms)', type: 'number', default: 600, min: 100, max: 3000, step: 50 }
 			]
 		});
 		ctx.surfaces.register({

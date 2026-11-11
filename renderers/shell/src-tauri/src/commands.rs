@@ -43,6 +43,16 @@ pub fn window_focus(host: State<Host>, hwnd: Hwnd) -> R<()> {
     svc!(host, windows, |w| w.focus(hwnd))?.map_err(err)
 }
 #[tauri::command]
+pub fn window_peek(window: WebviewWindow, host: State<Host>, hwnd: Hwnd) -> R<()> {
+    // Keep the calling window (the preview popup) above the peeked window.
+    let under = win_hwnd(&window).ok();
+    svc!(host, windows, |w| w.peek(hwnd, under))?.map_err(err)
+}
+#[tauri::command]
+pub fn window_unpeek(host: State<Host>, restore: bool) -> R<()> {
+    svc!(host, windows, |w| w.unpeek(restore))
+}
+#[tauri::command]
 pub fn window_toggle(host: State<Host>, hwnd: Hwnd) -> R<()> {
     svc!(host, windows, |w| w.toggle(hwnd))?.map_err(err)
 }
@@ -65,12 +75,13 @@ pub fn window_close(host: State<Host>, hwnd: Hwnd) -> R<()> {
 
 /// `rect` is in CSS px relative to the calling window; DWM wants physical px.
 #[tauri::command]
-pub fn preview_show(window: WebviewWindow, host: State<Host>, hwnd: Hwnd, rect: Rect) -> R<()> {
+pub fn preview_show(window: WebviewWindow, host: State<Host>, hwnd: Hwnd, rect: Rect) -> R<Value> {
     let scale = window.scale_factor().map_err(err)?;
     let s = |v: i32| (v as f64 * scale).round() as i32;
     let phys = Rect { left: s(rect.left), top: s(rect.top), right: s(rect.right), bottom: s(rect.bottom) };
     let dest = win_hwnd(&window)?;
-    svc!(host, windows, |w| w.show_preview(dest, hwnd, phys))?.map_err(err)
+    let (width, height) = svc!(host, windows, |w| w.show_preview(dest, hwnd, phys))?.map_err(err)?;
+    Ok(json!({ "width": width, "height": height }))
 }
 
 #[tauri::command]

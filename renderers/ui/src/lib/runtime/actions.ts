@@ -17,6 +17,8 @@ export function createActions(backend: Backend, store: Store): AruiActions {
 
 	const actions: AruiActions = {
 		focusWindow: (hwnd) => inv('window_focus', { hwnd }),
+		peekWindow: (hwnd) => inv('window_peek', { hwnd }),
+		unpeekWindow: (restore = true) => inv('window_unpeek', { restore }),
 		toggleWindow: (hwnd) => inv('window_toggle', { hwnd }),
 		minimizeWindow: (hwnd) => inv('window_minimize', { hwnd }),
 		maximizeWindow: (hwnd) => inv('window_maximize', { hwnd }),

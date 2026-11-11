@@ -227,6 +227,8 @@ export class MockServer {
 	private commands: { [C in CommandName]: CommandImpl } = {
 		windows_list: () => this.windows,
 		window_focus: ({ hwnd }) => this.focus(hwnd),
+		window_peek: () => undefined,
+		window_unpeek: () => undefined,
 		window_toggle: ({ hwnd }) => {
 			const w = this.win(hwnd);
 			if (w?.isFocused && !w.isMinimized) this.minimize(hwnd);
@@ -236,7 +238,7 @@ export class MockServer {
 		window_maximize: ({ hwnd }) => this.patchWindow(hwnd, { isMaximized: true, isMinimized: false }),
 		window_restore: ({ hwnd }) => this.patchWindow(hwnd, { isMaximized: false, isMinimized: false }),
 		window_close: ({ hwnd }) => this.closeWindow(hwnd),
-		preview_show: () => undefined,
+		preview_show: ({ hwnd }) => (hwnd % 2 ? { width: 1600, height: 1000 } : { width: 1280, height: 1024 }),
 		preview_hide: () => undefined,
 
 		apps_list: () => this.apps,

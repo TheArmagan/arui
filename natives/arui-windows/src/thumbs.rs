@@ -25,7 +25,8 @@ pub struct Thumb {
     bounds: Rect,
 }
 
-fn update(id: isize, bounds: Rect) -> Result<()> {
+/// Places the thumbnail and returns the source window's size (physical px).
+fn update(id: isize, bounds: Rect) -> Result<(i32, i32)> {
     unsafe {
         let size = DwmQueryThumbnailSourceSize(id)?;
         let r = aspect_fit(bounds, size.cx, size.cy);
@@ -46,25 +47,29 @@ fn update(id: isize, bounds: Rect) -> Result<()> {
             ..Default::default()
         };
         DwmUpdateThumbnailProperties(id, &props)?;
+        Ok((size.cx, size.cy))
     }
-    Ok(())
 }
 
-pub fn show(shared: &Arc<Shared>, dest: Hwnd, source: Hwnd, bounds: Rect) -> Result<()> {
+pub fn show(shared: &Arc<Shared>, dest: Hwnd, source: Hwnd, bounds: Rect) -> Result<(i32, i32)> {
     let mut map = shared.thumbs.lock();
     if let Some(t) = map.get_mut(&(dest, source)) {
         t.bounds = bounds;
         return update(t.id, bounds);
     }
     let id = unsafe { DwmRegisterThumbnail(to_hwnd(dest), to_hwnd(source))? };
-    if let Err(e) = update(id, bounds) {
-        unsafe {
-            let _ = DwmUnregisterThumbnail(id);
+    match update(id, bounds) {
+        Ok(size) => {
+            map.insert((dest, source), Thumb { id, bounds });
+            Ok(size)
         }
-        return Err(e);
+        Err(e) => {
+            unsafe {
+                let _ = DwmUnregisterThumbnail(id);
+            }
+            Err(e)
+        }
     }
-    map.insert((dest, source), Thumb { id, bounds });
-    Ok(())
 }
 
 pub fn hide(shared: &Arc<Shared>, dest: Hwnd, source: Option<Hwnd>) {

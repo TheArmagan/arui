@@ -159,6 +159,17 @@ impl WindowTracker {
         actions::focus(hwnd)
     }
 
+    /// Shows a window in front without activating it (hover peek), right below `under` if
+    /// given. See [`actions::peek`].
+    pub fn peek(&self, hwnd: Hwnd, under: Option<Hwnd>) -> Result<()> {
+        actions::peek(hwnd, under)
+    }
+
+    /// Ends a peek, putting the window back with `restore` or leaving it in front otherwise.
+    pub fn unpeek(&self, restore: bool) {
+        actions::unpeek(restore)
+    }
+
     /// Minimizes the window if it (or one of its owned popups) is the foreground window,
     /// otherwise restores and focuses it.
     pub fn toggle(&self, hwnd: Hwnd) -> Result<()> {
@@ -184,8 +195,9 @@ impl WindowTracker {
 
     /// Live DWM thumbnail of `source` drawn into top-level window `dest` (owned by this
     /// process) at `rect` (physical px, dest client coords), aspect-fit and centered.
-    /// Calling again with the same pair just moves/resizes it.
-    pub fn show_preview(&self, dest: Hwnd, source: Hwnd, rect: Rect) -> Result<()> {
+    /// Calling again with the same pair just moves/resizes it. Returns the source window's
+    /// size in physical px, so callers can shape the box to its aspect ratio.
+    pub fn show_preview(&self, dest: Hwnd, source: Hwnd, rect: Rect) -> Result<(i32, i32)> {
         thumbs::show(&self.shared, dest, source, rect)
     }
 

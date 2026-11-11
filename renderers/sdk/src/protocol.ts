@@ -116,6 +116,8 @@ export interface Commands {
 	// windows
 	windows_list: { args: void; result: WindowInfo[] };
 	window_focus: { args: { hwnd: Hwnd }; result: void };
+	window_peek: { args: { hwnd: Hwnd }; result: void };
+	window_unpeek: { args: { restore: boolean }; result: void };
 	/** Focus if not focused, minimize if focused. */
 	window_toggle: { args: { hwnd: Hwnd }; result: void };
 	window_minimize: { args: { hwnd: Hwnd }; result: void };
@@ -123,7 +125,8 @@ export interface Commands {
 	window_restore: { args: { hwnd: Hwnd }; result: void };
 	window_close: { args: { hwnd: Hwnd }; result: void };
 	/** Live DWM thumbnail of `hwnd` drawn into the calling window at `rect` (CSS px, relative to the window). */
-	preview_show: { args: { hwnd: Hwnd; rect: Rect }; result: void };
+	/** Returns the source window's size (physical px; use the ratio). */
+	preview_show: { args: { hwnd: Hwnd; rect: Rect }; result: { width: number; height: number } };
 	preview_hide: { args: { hwnd?: Hwnd }; result: void };
 
 	// apps / launching

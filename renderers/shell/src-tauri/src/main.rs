@@ -33,6 +33,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::windows_list,
             commands::window_focus,
+            commands::window_peek,
+            commands::window_unpeek,
             commands::window_toggle,
             commands::window_minimize,
             commands::window_maximize,
