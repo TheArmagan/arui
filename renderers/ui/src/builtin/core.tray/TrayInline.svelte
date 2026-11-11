@@ -17,10 +17,10 @@
 			type="button"
 			title={icon.tooltip}
 			aria-label={icon.tooltip}
-			class="hover:bg-muted/70 flex size-8 items-center justify-center rounded-md transition-colors"
+			class="arui-bar-button flex items-center justify-center size-7"
 			{...trayHandlers(ctx, host, icon, true)}
 		>
-			<img src={ctx.iconUrl(icon.iconKey)} alt="" class="size-[18px]" draggable="false" />
+			<img src={ctx.iconUrl(icon.iconKey)} alt="" class="size-4" draggable="false" />
 		</button>
 	{/each}
 </div>

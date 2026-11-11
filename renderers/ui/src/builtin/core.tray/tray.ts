@@ -37,7 +37,9 @@ export function trayHandlers(ctx: AruiContext, host: UiHost, icon: TrayIcon, inl
 			if (e.button === 1) forward(ctx, icon, 'middleClick', e);
 		},
 		oncontextmenu: (e: MouseEvent) => {
+			// Stop here so the taskbar's own context menu does not open on top of the app's menu.
 			e.preventDefault();
+			e.stopPropagation();
 			if (!e.shiftKey) return forward(ctx, icon, 'rightClick', e);
 			const items: MenuItem[] = [
 				inline

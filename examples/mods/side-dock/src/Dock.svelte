@@ -98,7 +98,7 @@
 <style>
 	.dock-window {
 		height: 100%;
-		padding: 8px 6px 8px 8px;
+		padding: 4px;
 		box-sizing: border-box;
 	}
 	.dock {
@@ -106,13 +106,15 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 10px;
-		padding: 10px 0;
+		gap: 6px;
+		padding: 6px 0;
 		box-sizing: border-box;
-		border-radius: calc(var(--arui-radius) + 8px);
+		border-radius: calc(var(--arui-radius) + 2px);
 		border: 1px solid var(--arui-border);
 		background: color-mix(in oklab, var(--arui-bg) 94%, transparent);
-		box-shadow: var(--arui-bar-shadow);
+		box-shadow:
+			var(--arui-bar-shadow),
+			inset 0 1px 0 rgb(255 255 255 / 0.06);
 		color: var(--arui-fg);
 	}
 	.section {
@@ -122,9 +124,8 @@
 		gap: 6px;
 	}
 	.divider {
-		width: 32px;
-		height: 2px;
-		border-radius: 2px;
+		width: 20px;
+		height: 1px;
 		background: var(--arui-border);
 		flex-shrink: 0;
 	}
@@ -136,66 +137,63 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 4px;
+		gap: 2px;
 	}
 	.app {
 		position: relative;
-		width: 48px;
-		height: 48px;
+		width: 36px;
+		height: 36px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		border: 0;
-		border-radius: 12px;
+		border-radius: calc(var(--arui-radius) - 2px);
 		background: transparent;
 		cursor: pointer;
-		transition: background 0.2s;
+		transition:
+			background 150ms ease-out,
+			box-shadow 150ms ease-out,
+			transform 150ms ease-out;
 	}
 	.app:hover {
 		background: color-mix(in oklab, var(--arui-fg) 7%, transparent);
+		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05);
+	}
+	.app:active {
+		transform: scale(0.92);
 	}
 	.app img {
-		width: 34px;
-		height: 34px;
-		opacity: 0.5;
-		transition:
-			transform 0.25s,
-			opacity 0.25s;
+		width: 24px;
+		height: 24px;
 	}
-	.app.running img {
-		opacity: 0.8;
-	}
-	.app.focused img {
-		opacity: 1;
-		transform: scale(1.06);
-	}
-	.app:hover img {
-		transform: scale(1.12);
+	.app.focused {
+		background: color-mix(in oklab, var(--arui-fg) 9%, transparent);
 	}
 	.dot {
 		position: absolute;
-		left: -5px;
+		left: -3px;
 		top: 50%;
-		width: 4px;
+		width: 3px;
 		height: 0;
-		border-radius: 4px;
+		border-radius: 3px;
 		transform: translateY(-50%);
 		background: var(--arui-muted-fg);
 		transition: height 0.25s;
 	}
 	.app.running .dot {
-		height: 8px;
+		height: 4px;
 	}
 	.app.focused .dot {
-		height: 20px;
+		height: 14px;
+		box-shadow: 0 0 6px var(--arui-highlight);
 		background: var(--arui-highlight);
 	}
 	.app.flashing .dot {
-		height: 20px;
+		height: 14px;
 		background: #f5b83d;
 	}
 	.label {
-		max-width: 64px;
+		max-width: 40px;
 		font-size: 10px;
 		line-height: 1.2;
 		text-align: center;

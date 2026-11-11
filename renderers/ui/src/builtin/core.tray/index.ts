@@ -36,7 +36,7 @@ export default defineMod({
 		ctx.surfaces.register({
 			id: 'tray-flyout',
 			component: TrayFlyout,
-			window: { kind: 'popup', anchor: 'rect', width: 196, height: 160, offset: 10 }
+			window: { kind: 'popup', anchor: 'rect', width: 172, height: 140, offset: 10 }
 		});
 	}
 });

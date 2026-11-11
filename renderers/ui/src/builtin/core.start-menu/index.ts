@@ -17,7 +17,7 @@ export default defineMod({
 		ctx.surfaces.register({
 			id: 'start-menu',
 			component: StartMenu,
-			window: { kind: 'popup', anchor: 'bottomLeft', width: 640, height: 700, offset: 8 }
+			window: { kind: 'popup', anchor: 'bottomLeft', width: 600, height: 640, offset: 8 }
 		});
 		// Only one window may react to the key, otherwise every surface would toggle it.
 		if (ctx.surface.id === 'host') {

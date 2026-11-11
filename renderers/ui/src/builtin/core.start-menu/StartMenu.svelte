@@ -169,7 +169,7 @@
 			onmouseenter={() => (active = indexOf(key))}
 			onclick={() => launch(app)}
 		>
-			<img src={ctx.iconUrl(app.iconKey)} alt="" class="size-6" draggable="false" />
+			<img src={ctx.iconUrl(app.iconKey)} alt="" class="size-5" draggable="false" />
 			<span class="min-w-0 flex-1 truncate">{app.name}</span>
 			{#if activeKey === key && query}
 				<CornerDownLeft class="text-muted-foreground size-3.5" />
@@ -180,9 +180,9 @@
 
 <div class="h-full p-px">
 	<div class="arui-surface flex h-full flex-col overflow-hidden">
-		<div class="px-5 pt-5 pb-3">
+		<div class="px-4 pt-4 pb-2.5">
 			<label
-				class="bg-background/70 focus-within:border-highlight/70 flex items-center gap-3 rounded-full border px-4 py-2.5 transition-colors"
+				class="bg-background/70 focus-within:border-highlight/70 flex items-center gap-3 rounded-full border px-3.5 py-2 transition-colors"
 			>
 				<Search class="text-muted-foreground size-4 shrink-0" />
 				<input
@@ -198,7 +198,7 @@
 			<Slot name="start.header" />
 		</div>
 
-		<div bind:this={scroller} class="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-5 pb-4">
+		<div bind:this={scroller} class="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 pb-3">
 			{#if query.trim()}
 				<div class="text-muted-foreground mb-1.5 px-1 text-xs font-medium tracking-wide uppercase">
 					Best matches
@@ -227,7 +227,7 @@
 									onmouseenter={() => (active = indexOf('p:' + app.id))}
 									onclick={() => launch(app)}
 								>
-									<img src={ctx.iconUrl(app.iconKey)} alt="" class="size-9" draggable="false" />
+									<img src={ctx.iconUrl(app.iconKey)} alt="" class="size-8" draggable="false" />
 									<span class="w-full truncate text-center text-[11px] leading-tight">{app.name}</span>
 								</button>
 							</ContextMenuHost>
@@ -254,7 +254,7 @@
 			{/if}
 		</div>
 
-		<footer class="bg-background/40 relative flex items-center justify-between border-t px-5 py-3">
+		<footer class="bg-background/40 relative flex items-center justify-between border-t px-4 py-2.5">
 			<div class="flex items-center gap-2.5">
 				<div class="bg-highlight/20 text-highlight flex size-8 items-center justify-center rounded-full text-sm font-semibold">
 					A

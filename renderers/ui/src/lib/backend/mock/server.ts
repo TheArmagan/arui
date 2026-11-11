@@ -310,6 +310,7 @@ export class MockServer {
 			this.layout();
 		},
 		surface_params: (_args, from) => this.instances.get(from)?.params ?? {},
+		surface_visible: (_args, from) => this.instances.get(from)?.visible ?? true,
 
 		mods_list: async () => {
 			await this.modsReady;
@@ -632,7 +633,7 @@ export class MockServer {
 }
 
 /** Commands that run constantly and would flood the dev log. */
-const QUIET = new Set<CommandName>(['surface_params', 'preview_show', 'surface_resize']);
+const QUIET = new Set<CommandName>(['surface_params', 'surface_visible', 'preview_show', 'surface_resize']);
 
 declare global {
 	interface Window {

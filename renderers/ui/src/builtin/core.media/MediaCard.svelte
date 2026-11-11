@@ -27,40 +27,40 @@
 		<button
 			type="button"
 			aria-label={playing ? 'Pause' : 'Play'}
-			class="relative size-11 overflow-hidden rounded-lg border bg-cover bg-center"
+			class="relative size-9 overflow-hidden rounded-md border bg-cover bg-center"
 			style:background-image={art ? `url("${art}")` : undefined}
 			onclick={() => ctx.actions.media('togglePlayPause')}
 		>
 			<span class="absolute inset-0 flex items-center justify-center bg-black/45 text-white">
-				{#if playing}<Pause size={18} />{:else}<Play size={18} />{/if}
+				{#if playing}<Pause size={15} />{:else}<Play size={15} />{/if}
 			</span>
 		</button>
 	{:else}
 		<div
-			class="relative flex h-12 w-64 shrink-0 overflow-hidden rounded-lg bg-cover bg-center drop-shadow-[0_0_4px_rgba(0,0,0,0.5)] select-none"
+			class="relative flex h-9 w-56 shrink-0 overflow-hidden rounded-md bg-cover bg-center drop-shadow-[0_0_4px_rgba(0,0,0,0.5)] select-none"
 			style:background-image={art ? `url("${art}")` : undefined}
 		>
 			<div
 				class="flex w-full items-center justify-between gap-1 p-1 backdrop-blur-xs backdrop-brightness-50
 					{art ? '' : 'bg-muted/60'}"
 			>
-				<div class="flex min-w-0 flex-1 items-center gap-2">
+				<div class="flex min-w-0 flex-1 items-center gap-1.5">
 					<div
-						class="bg-muted flex size-10 min-w-10 items-center justify-center rounded-md bg-cover bg-center shadow"
+						class="bg-muted flex size-7 min-w-7 items-center justify-center rounded bg-cover bg-center shadow"
 						style:background-image={art ? `url("${art}")` : undefined}
 					>
-						{#if !art}<Music size={16} class="text-muted-foreground" />{/if}
+						{#if !art}<Music size={13} class="text-muted-foreground" />{/if}
 					</div>
-					<div class="flex min-w-0 flex-col gap-1 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]">
-						<span class="truncate text-sm leading-none font-semibold text-white">
+					<div class="flex min-w-0 flex-col gap-0.5 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]">
+						<span class="truncate text-xs leading-none font-semibold text-white">
 							{media?.title || 'No media playing'}
 						</span>
-						<span class="truncate text-xs leading-none text-white/65">
+						<span class="truncate text-[11px] leading-none text-white/65">
 							{media?.artist || 'Nothing in the queue'}
 						</span>
 					</div>
 				</div>
-				<div class="flex h-10 w-[68px] min-w-[68px] items-center justify-between pr-1 text-white/70">
+				<div class="flex h-7 w-[58px] min-w-[58px] items-center justify-between pr-1 text-white/70">
 					<button
 						type="button"
 						aria-label="Previous"
@@ -68,7 +68,7 @@
 						class="cursor-pointer transition-colors duration-300 hover:text-white disabled:opacity-40"
 						onclick={() => ctx.actions.media('previous')}
 					>
-						<SkipBack size={18} />
+						<SkipBack size={14} />
 					</button>
 					<button
 						type="button"
@@ -77,7 +77,7 @@
 						class="cursor-pointer transition-colors duration-300 hover:text-white disabled:opacity-40"
 						onclick={() => ctx.actions.media('togglePlayPause')}
 					>
-						{#if playing}<Pause size={18} />{:else}<Play size={18} />{/if}
+						{#if playing}<Pause size={14} />{:else}<Play size={14} />{/if}
 					</button>
 					<button
 						type="button"
@@ -86,7 +86,7 @@
 						class="cursor-pointer transition-colors duration-300 hover:text-white disabled:opacity-40"
 						onclick={() => ctx.actions.media('next')}
 					>
-						<SkipForward size={18} />
+						<SkipForward size={14} />
 					</button>
 				</div>
 			</div>

@@ -12,7 +12,7 @@ export function registerDock(ctx: AruiContext) {
 			const dispose = ctx.surfaces.register({
 				id: 'taskbar',
 				component: Dock,
-				window: { kind: 'appbar', edge, thickness: 76, perMonitor: true, reserve: true }
+				window: { kind: 'appbar', edge, thickness: 52, perMonitor: true, reserve: true }
 			});
 			return dispose;
 		});

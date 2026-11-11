@@ -25,7 +25,7 @@ export default defineMod({
 		ctx.surfaces.register({
 			id: 'calendar',
 			component: Calendar,
-			window: { kind: 'popup', anchor: 'rect', width: 340, height: 480, offset: 10 }
+			window: { kind: 'popup', anchor: 'rect', width: 320, height: 440, offset: 10 }
 		});
 	}
 });

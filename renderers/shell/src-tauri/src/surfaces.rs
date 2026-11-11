@@ -135,21 +135,29 @@ pub fn url(surface: &str, monitor: Option<&str>) -> String {
 }
 
 /// Placement of a popup/panel in physical px, clamped into the monitor's work area.
+///
+/// `size` (physical px) overrides the spec's default size. Reopened popups pass their current
+/// size: content-sized popups only resize themselves when their content changes, so placing a
+/// reused window at the default size would leave it too tall and offset from its anchor.
 pub fn place(
     opts: &WindowOptions,
     monitor: &MonitorInfo,
     cursor: (i32, i32),
     rect: Option<Rect>,
+    size: Option<(i32, i32)>,
 ) -> Rect {
     let s = monitor.scale;
-    let w = (opts.width.unwrap_or(480.0) * s).round() as i32;
-    let h = (opts.height.unwrap_or(560.0) * s).round() as i32;
+    let (w, h) = size.unwrap_or((
+        (opts.width.unwrap_or(480.0) * s).round() as i32,
+        (opts.height.unwrap_or(560.0) * s).round() as i32,
+    ));
     let off = (opts.offset.unwrap_or(8.0) * s).round() as i32;
     let wa = monitor.work_area;
     let cx = wa.left + (wa.width() - w) / 2;
     let (x, y) = match opts.anchor.unwrap_or_default() {
         Anchor::Center => (cx, wa.top + (wa.height() - h) / 2),
-        Anchor::Cursor => (cursor.0 - w / 2, cursor.1 - h - off),
+        // Context menus: bottom-left corner at the pointer, below it if there is no room above.
+        Anchor::Cursor => (cursor.0, if cursor.1 - h >= monitor.bounds.top { cursor.1 - h } else { cursor.1 }),
         Anchor::Rect => match rect {
             // Above the element, centered on it; flips below if it doesn't fit.
             Some(r) => {
@@ -197,16 +205,27 @@ mod tests {
     #[test]
     fn bottom_center_sits_on_work_area() {
         let o = WindowOptions { width: Some(600.0), height: Some(400.0), anchor: Some(Anchor::BottomCenter), offset: Some(10.0), ..Default::default() };
-        let r = place(&o, &mon(), (0, 0), None);
+        let r = place(&o, &mon(), (0, 0), None, None);
         assert_eq!(r, Rect { left: 660, top: 590, right: 1260, bottom: 990 });
     }
 
     #[test]
     fn rect_anchor_clamps() {
         let o = WindowOptions { width: Some(300.0), height: Some(200.0), anchor: Some(Anchor::Rect), offset: Some(0.0), ..Default::default() };
-        let r = place(&o, &mon(), (0, 0), Some(Rect { left: 0, top: 1010, right: 40, bottom: 1070 }));
+        let r = place(&o, &mon(), (0, 0), Some(Rect { left: 0, top: 1010, right: 40, bottom: 1070 }), None);
         assert_eq!(r.left, 0);
         assert_eq!(r.bottom, 1010);
+    }
+
+    #[test]
+    fn cursor_anchor_opens_at_pointer_and_keeps_reused_size() {
+        let o = WindowOptions { width: Some(232.0), height: Some(200.0), anchor: Some(Anchor::Cursor), ..Default::default() };
+        // Reused window that shrank to 90px: its bottom-left corner must sit at the pointer.
+        let r = place(&o, &mon(), (500, 1050), None, Some((232, 90)));
+        assert_eq!(r, Rect { left: 500, top: 960, right: 732, bottom: 1050 });
+        // No room above: opens below the pointer.
+        let r = place(&o, &mon(), (500, 20), None, None);
+        assert_eq!(r.top, 20);
     }
 
     #[test]

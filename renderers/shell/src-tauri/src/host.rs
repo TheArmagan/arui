@@ -362,7 +362,17 @@ pub async fn open_surface(app: &AppHandle, args: OpenArgs) -> Result<(), String>
             }
         }
     } else {
-        place_window(&win, surfaces::place(o, &monitor, cursor(app), args.rect));
+        // A reused popup keeps its current size (converted to the target monitor's scale).
+        let size = if is_new {
+            None
+        } else {
+            let from = win.scale_factor().unwrap_or(monitor.scale);
+            win.inner_size().ok().map(|s| {
+                let k = monitor.scale / from;
+                ((s.width as f64 * k).round() as i32, (s.height as f64 * k).round() as i32)
+            })
+        };
+        place_window(&win, surfaces::place(o, &monitor, cursor(app), args.rect, size));
     }
 
     win.show().map_err(|e| e.to_string())?;
@@ -383,7 +393,9 @@ fn labels_for(app: &AppHandle, id: &str, monitor: Option<&str>) -> Vec<String> {
     let s = host.surfaces.lock();
     s.windows
         .iter()
-        .filter(|(_, w)| w.surface == id && (monitor.is_none() || w.monitor.as_deref() == monitor))
+        // Windows of surfaces that are not per-monitor have no monitor and match any request,
+        // so a toggle from a taskbar button (which passes its monitor) still finds them.
+        .filter(|(_, w)| w.surface == id && (monitor.is_none() || w.monitor.is_none() || w.monitor.as_deref() == monitor))
         .map(|(l, _)| l.clone())
         .collect()
 }

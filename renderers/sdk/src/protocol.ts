@@ -163,6 +163,8 @@ export interface Commands {
 	surface_resize: { args: { width?: number; height?: number; thickness?: number }; result: void };
 	/** Params the calling surface window was opened with. */
 	surface_params: { args: void; result: Record<string, unknown> };
+	/** Whether the calling surface window is shown (the page cannot tell reliably after a reload). */
+	surface_visible: { args: void; result: boolean };
 
 	// mods & settings
 	mods_list: { args: void; result: InstalledMod[] };

@@ -31,7 +31,7 @@
 <button
 	bind:this={el}
 	type="button"
-	class="hover:bg-muted/70 flex cursor-pointer flex-col justify-center rounded-lg px-2.5 py-1 text-right transition-colors
+	class="arui-bar-button flex h-9 flex-col justify-center px-2 text-right
 		{orientation === 'vertical' ? 'items-center text-center' : 'items-end'}"
 	onclick={() =>
 		ctx.surfaces.toggle({
@@ -40,6 +40,6 @@
 			rect: el ? host.screenRect(el.getBoundingClientRect()) : undefined
 		})}
 >
-	<span class="text-foreground text-sm leading-tight font-semibold tabular-nums">{time}</span>
+	<span class="text-foreground text-xs leading-tight font-semibold tabular-nums">{time}</span>
 	<span class="text-muted-foreground text-[11px] leading-tight whitespace-nowrap">{date}</span>
 </button>

@@ -1,6 +1,6 @@
 <script lang="ts">
-	// Pinned and running apps, one button per group. Focused groups are full size and opaque,
-	// the rest are dimmed like the legacy bar. Hover asks core.previews for a preview popup.
+	// Pinned and running apps, one button per group. Running apps get a dot under the icon
+	// that grows into an accent pill when focused. Hover asks core.previews for a preview popup.
 	import type { AppGroup, AruiContext } from '@arui/sdk';
 	import { ContextMenuHost, getUiHost } from '@arui/sdk/ui';
 	import { flip } from 'svelte/animate';
@@ -24,17 +24,23 @@
 			});
 	}
 
-	function onClick(group: AppGroup, e: MouseEvent) {
+	// Clicking or right clicking dismisses the preview so it never covers a menu.
+	function dismissPreview(group: AppGroup) {
 		ctx.commands.run('core.previews:leave', { appId: group.appId, immediate: true }).catch(() => {});
+	}
+
+	function onClick(group: AppGroup, e: MouseEvent) {
+		dismissPreview(group);
 		if (e.shiftKey) void launchNew(ctx, group);
 		else void ctx.actions.activateGroup(group);
 	}
 </script>
 
-<div class="flex items-center gap-1 {vertical ? 'flex-col' : ''}">
+<div class="flex items-center gap-0.5 {vertical ? 'flex-col' : ''}">
 	{#each ctx.state.groups as group (group.appId)}
 		{@const running = group.windows.length > 0}
-		<div class="flex" animate:flip={{ duration: 260 }} in:scale={{ duration: 180, start: 0.6 }}>
+		{@const lit = group.isFocused || group.isFlashing}
+		<div class="flex" animate:flip={{ duration: 180 }} in:scale={{ duration: 140, start: 0.85 }}>
 			<ContextMenuHost
 				target="taskbar.group"
 				data={{ group }}
@@ -45,12 +51,14 @@
 					type="button"
 					aria-label={group.name}
 					data-focused={group.isFocused}
-					class="group/app relative flex size-11 cursor-pointer items-center justify-center rounded-lg transition-colors duration-200 hover:bg-white/[0.06]
-						{group.isFocused ? 'bg-white/[0.07]' : ''}"
+					class="arui-bar-button relative flex size-9 items-center justify-center
+						{group.isFocused ? 'bg-white/[0.09] shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]' : ''}"
 					onclick={(e) => onClick(group, e)}
 					onauxclick={(e) => {
 						if (e.button === 1) void launchNew(ctx, group);
 					}}
+					onmousedown={() => dismissPreview(group)}
+					oncontextmenucapture={() => dismissPreview(group)}
 					onmouseenter={(e) => hover(group, e.currentTarget, true)}
 					onmouseleave={(e) => hover(group, e.currentTarget, false)}
 				>
@@ -58,25 +66,29 @@
 						src={ctx.iconUrl(group.iconKey)}
 						alt=""
 						draggable="false"
-						class="size-8 transition-all duration-300 group-hover/app:scale-110
-							{group.isFocused ? 'scale-105 opacity-100' : running ? 'opacity-75' : 'opacity-50'}
-							{group.isFlashing ? 'animate-pulse' : ''}"
+						class="size-6 {group.isFlashing ? 'animate-pulse' : ''}"
 					/>
 					{#if running}
 						<span
-							class="absolute rounded-full transition-all duration-300
-								{vertical ? 'top-1/2 left-0.5 w-[3px] -translate-y-1/2' : 'bottom-0.5 left-1/2 h-[3px] -translate-x-1/2'}
+							class="absolute rounded-full transition-[width,height,background-color] duration-200 ease-out
+								{vertical ? 'top-1/2 left-[2px] w-[3px] -translate-y-1/2' : 'bottom-[2px] left-1/2 h-[3px] -translate-x-1/2'}
 								{group.isFlashing
-								? 'bg-amber-400 ' + (vertical ? 'h-4' : 'w-4')
+								? 'bg-amber-400 shadow-[0_0_6px_var(--color-amber-400)]'
 								: group.isFocused
-									? 'bg-highlight ' + (vertical ? 'h-4' : 'w-4')
-									: 'bg-muted-foreground ' + (vertical ? 'h-1.5' : 'w-1.5')}"
+									? 'bg-highlight shadow-[0_0_6px_var(--arui-highlight)]'
+									: 'bg-muted-foreground/70'}
+								{lit
+								? vertical
+									? 'h-3.5'
+									: 'w-3.5'
+								: group.windows.length > 1
+									? vertical
+										? 'h-2'
+										: 'w-2'
+									: vertical
+										? 'h-1'
+										: 'w-1'}"
 						></span>
-						{#if group.windows.length > 1 && !vertical}
-							<span
-								class="bg-muted-foreground/60 absolute bottom-0.5 left-1/2 h-[3px] w-1 translate-x-[9px] rounded-full"
-							></span>
-						{/if}
 					{/if}
 				</button>
 			</ContextMenuHost>

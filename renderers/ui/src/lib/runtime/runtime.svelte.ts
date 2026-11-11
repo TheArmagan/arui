@@ -190,7 +190,14 @@ export class Runtime implements UiHost {
 		this.commands.set(RUNTIME_INFO_COMMAND, [{ handler: () => this.info(), seq: 0 }]);
 
 		if (!this.isHost && this.location.surface !== 'dev') {
+			// document.visibilityState reports 'visible' for hidden windows after a dev reload, which
+			// made hidden popups (e.g. the menu) look open. Ask the host instead.
 			this.surface.visible = document.visibilityState !== 'hidden';
+			try {
+				this.surface.visible = await b.invoke('surface_visible');
+			} catch {
+				// Older host: keep the page's guess.
+			}
 			try {
 				this.surface.params = (await b.invoke('surface_params')) ?? {};
 			} catch {

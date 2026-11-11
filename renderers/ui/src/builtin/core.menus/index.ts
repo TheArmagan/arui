@@ -16,7 +16,7 @@ export default defineMod({
 		ctx.surfaces.register({
 			id: 'menu',
 			component: MenuSurface,
-			window: { kind: 'popup', anchor: 'cursor', width: 272, height: 240, closeOnBlur: true }
+			window: { kind: 'popup', anchor: 'cursor', width: 232, height: 200, closeOnBlur: true }
 		});
 	}
 });

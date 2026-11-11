@@ -36,9 +36,9 @@ export default defineMod({
 			window: {
 				kind: 'popup',
 				anchor: 'rect',
-				width: 240,
-				height: 186,
-				offset: 10,
+				width: 228,
+				height: 150,
+				offset: 8,
 				closeOnBlur: false,
 				focusable: false
 			}
@@ -48,6 +48,7 @@ export default defineMod({
 		let openTimer: ReturnType<typeof setTimeout> | undefined;
 		let closeTimer: ReturnType<typeof setTimeout> | undefined;
 		let pointerInside = false;
+		let menuVisible = false;
 
 		const open = (a: HoverArgs) => {
 			openFor = a.appId;
@@ -73,6 +74,7 @@ export default defineMod({
 
 		ctx.onDispose(
 			ctx.commands.register('core.previews:hover', (a: HoverArgs) => {
+				if (menuVisible) return;
 				clearTimeout(closeTimer);
 				clearTimeout(openTimer);
 				if (openFor && openFor !== a.appId) return open(a);
@@ -93,6 +95,12 @@ export default defineMod({
 			if (inside) clearTimeout(closeTimer);
 			else scheduleClose();
 		});
+		ctx.onDispose(
+			ctx.events.on<{ visible: boolean }>('core.menus:visible', ({ visible }) => {
+				menuVisible = visible;
+				if (visible) close();
+			})
+		);
 		ctx.onDispose(close);
 	}
 });

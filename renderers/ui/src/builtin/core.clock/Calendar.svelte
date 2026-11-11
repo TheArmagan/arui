@@ -27,9 +27,9 @@
 	const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 </script>
 
-<div class="arui-surface flex h-full flex-col gap-4 overflow-hidden p-5">
+<div class="arui-surface flex h-full flex-col gap-3 overflow-hidden p-4">
 	<div>
-		<div class="font-display text-4xl font-semibold tracking-tight tabular-nums">
+		<div class="font-display text-3xl font-semibold tracking-tight tabular-nums">
 			{now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
 		</div>
 		<div class="text-muted-foreground mt-1 text-sm">

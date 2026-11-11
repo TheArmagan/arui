@@ -21,7 +21,7 @@
 	bind:this={el}
 	type="button"
 	title="{networkLabel(ctx.state.network)} - Volume {Math.round(ctx.state.volume.level * 100)}%"
-	class="text-foreground/85 hover:bg-muted/70 flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors
+	class="arui-bar-button text-foreground/85 flex h-8 items-center gap-2 px-2
 		{orientation === 'vertical' ? 'flex-col' : ''}"
 	onwheel={onWheel}
 	onclick={() =>
@@ -31,6 +31,6 @@
 			rect: el ? host.screenRect(el.getBoundingClientRect()) : undefined
 		})}
 >
-	<NetIcon size={17} />
-	<VolumeIcon size={17} />
+	<NetIcon size={15} />
+	<VolumeIcon size={15} />
 </button>

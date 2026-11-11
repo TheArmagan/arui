@@ -35,7 +35,7 @@
 	const slotProps = { orientation: 'horizontal' };
 </script>
 
-<div class="taskbar-window flex h-full w-full items-stretch px-2 pt-1.5 pb-2">
+<div class="taskbar-window flex h-full w-full items-stretch px-1.5 py-1">
 	<ContextMenuHost
 		target="taskbar"
 		data={{ monitor: ctx.surface.monitor }}
@@ -43,23 +43,23 @@
 		class="flex min-w-0 flex-1"
 	>
 		<div
-			class="arui-taskbar-bar bg-background/95 flex min-w-0 flex-1 items-center gap-3 rounded-[calc(var(--radius)+4px)] border px-2.5 shadow-(--arui-bar-shadow)"
+			class="arui-taskbar-bar bg-background/95 flex min-w-0 flex-1 items-center gap-1.5 rounded-[calc(var(--radius)+2px)] border px-1.5 shadow-[var(--arui-bar-shadow),inset_0_1px_0_rgb(255_255_255/0.06)]"
 		>
-			<div class="flex shrink-0 items-center gap-3">
+			<div class="flex shrink-0 items-center gap-1">
 				<Slot name="taskbar.start" props={slotProps} />
 			</div>
-			<div class="bg-border h-8 w-0.5 shrink-0 rounded-full"></div>
-			<div class="flex shrink-0 items-center gap-2 empty:hidden">
+			<div class="bg-border mx-0.5 h-5 w-px shrink-0"></div>
+			<div class="flex shrink-0 items-center gap-1 empty:hidden">
 				<Slot name="taskbar.left" props={slotProps} />
 			</div>
 			<div class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
 				<Slot name="taskbar.center" props={slotProps} />
 			</div>
-			<div class="flex shrink-0 items-center gap-3 empty:hidden">
+			<div class="flex shrink-0 items-center gap-1.5 empty:hidden">
 				<Slot name="taskbar.right" props={slotProps} />
 			</div>
-			<div class="bg-border h-8 w-0.5 shrink-0 rounded-full"></div>
-			<div class="flex shrink-0 items-center gap-1">
+			<div class="bg-border mx-0.5 h-5 w-px shrink-0"></div>
+			<div class="flex shrink-0 items-center gap-0.5">
 				<Slot name="taskbar.end" props={slotProps} />
 			</div>
 		</div>

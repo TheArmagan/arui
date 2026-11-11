@@ -18,7 +18,7 @@ export default defineMod({
 		ctx.surfaces.register({
 			id: 'taskbar',
 			component: Taskbar,
-			window: { kind: 'appbar', edge: 'bottom', thickness: 72, perMonitor: true, reserve: true }
+			window: { kind: 'appbar', edge: 'bottom', thickness: 48, perMonitor: true, reserve: true }
 		});
 		ctx.widgets.register('taskbar.start', StartButton, { id: 'core.taskbar:start', order: 100 });
 		ctx.widgets.register('taskbar.center', AppGroups, { id: 'core.taskbar:groups', order: 100 });

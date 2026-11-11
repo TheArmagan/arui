@@ -12,7 +12,7 @@
 </script>
 
 <div class="p-px">
-	<div bind:clientHeight={height} class="arui-surface flex flex-col gap-3 p-4">
+	<div bind:clientHeight={height} class="arui-surface flex flex-col gap-3 p-3">
 		<Slot name="quick.settings" />
 		<div class="flex items-center justify-between border-t pt-3">
 			<span class="text-muted-foreground text-xs">Quick settings</span>

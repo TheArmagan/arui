@@ -60,6 +60,7 @@ fn main() {
             commands::surface_close,
             commands::surface_resize,
             commands::surface_params,
+            commands::surface_visible,
             commands::mods_list,
             commands::mod_set_enabled,
             commands::mods_open_folder,

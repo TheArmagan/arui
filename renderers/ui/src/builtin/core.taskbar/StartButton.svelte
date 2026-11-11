@@ -3,8 +3,7 @@
 	import { ContextMenuHost, getUiHost } from '@arui/sdk/ui';
 	import LayoutList from '@lucide/svelte/icons/layout-list';
 	import SquareTerminal from '@lucide/svelte/icons/square-terminal';
-	import TrainTrack from '@lucide/svelte/icons/train-track';
-	import AppWindow from '@lucide/svelte/icons/app-window';
+	import WindowsLogo from './WindowsLogo.svelte';
 
 	let { ctx }: { ctx: AruiContext } = $props();
 	const host = getUiHost();
@@ -38,7 +37,7 @@
 		{
 			id: 'windows-start',
 			label: 'Windows Start menu',
-			icon: AppWindow,
+			icon: WindowsLogo,
 			separatorBefore: true,
 			onSelect: () => void ctx.actions.openWindowsStart()
 		}
@@ -49,9 +48,9 @@
 		bind:this={el}
 		type="button"
 		aria-label="Start"
-		class="text-muted-foreground hover:bg-muted hover:text-foreground flex size-10 min-w-10 cursor-pointer items-center justify-center rounded-full border transition-all duration-300 active:scale-95"
+		class="arui-bar-button flex items-center justify-center text-foreground/90 hover:text-foreground size-9 min-w-9"
 		onclick={open}
 	>
-		<TrainTrack size={22} />
+		<WindowsLogo size={16} />
 	</button>
 </ContextMenuHost>

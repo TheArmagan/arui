@@ -181,12 +181,13 @@ pub fn surface_close(app: AppHandle, id: String, monitor: Option<String>) {
 #[tauri::command]
 pub fn surface_resize(window: WebviewWindow, host: State<Host>, width: Option<f64>, height: Option<f64>, thickness: Option<f64>) -> R<()> {
     let scale = window.scale_factor().map_err(err)?;
-    let is_appbar = host
+    let (is_appbar, centered) = host
         .surfaces
         .lock()
         .windows
         .get(window.label())
-        .is_some_and(|w| w.spec.window.is_appbar());
+        .map(|w| (w.spec.window.is_appbar(), w.spec.window.anchor == Some(crate::surfaces::Anchor::Rect)))
+        .unwrap_or((false, false));
     if is_appbar {
         if let Some(t) = thickness.or(height) {
             let hwnd = win_hwnd(&window)?;
@@ -200,11 +201,25 @@ pub fn surface_resize(window: WebviewWindow, host: State<Host>, width: Option<f6
     let cur = window.inner_size().map_err(err)?;
     let w = width.map(|v| (v * scale).round() as u32).unwrap_or(cur.width);
     let h = height.map(|v| (v * scale).round() as u32).unwrap_or(cur.height);
-    // Keep the bottom edge fixed so popups above the taskbar grow upwards.
+    // Keep the bottom edge fixed so popups above the taskbar grow upwards. Popups anchored to
+    // an element also keep their horizontal center, so they stay over that element.
     let pos = window.outer_position().map_err(err)?;
     let dy = h as i32 - cur.height as i32;
+    let mut x = pos.x;
+    if centered {
+        x -= (w as i32 - cur.width as i32) / 2;
+        if let Ok(Some(m)) = window.current_monitor() {
+            let (mx, mw) = (m.position().x, m.size().width as i32);
+            x = x.clamp(mx, (mx + mw - w as i32).max(mx));
+        }
+    }
     window.set_size(tauri::PhysicalSize::new(w, h)).map_err(err)?;
-    window.set_position(tauri::PhysicalPosition::new(pos.x, pos.y - dy)).map_err(err)
+    window.set_position(tauri::PhysicalPosition::new(x, pos.y - dy)).map_err(err)
+}
+
+#[tauri::command]
+pub fn surface_visible(window: WebviewWindow) -> bool {
+    window.is_visible().unwrap_or(true)
 }
 
 #[tauri::command]

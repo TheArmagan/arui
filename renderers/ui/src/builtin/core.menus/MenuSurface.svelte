@@ -35,6 +35,11 @@
 		tick().then(() => listEl?.focus());
 	});
 
+	// Lets core.previews stay out of the way while a menu is showing.
+	$effect(() => {
+		void ctx.events.emit('core.menus:visible', { visible: ctx.surface.visible });
+	});
+
 	$effect(() => {
 		if (height > 0) void ctx.surface.resize({ height: Math.ceil(height) + 2 });
 	});
@@ -78,37 +83,37 @@
 		role="menu"
 		tabindex="-1"
 		onkeydown={onKey}
-		class="arui-surface text-popover-foreground p-1 text-sm outline-none"
+		class="arui-surface text-popover-foreground p-1 text-[13px] outline-none"
 	>
 		{#if trail.length}
 			<button
 				type="button"
-				class="text-muted-foreground hover:text-foreground flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs"
+				class="text-muted-foreground hover:text-foreground flex w-full items-center gap-2 rounded-md px-2 py-1 text-xs"
 				onclick={() => (trail = trail.slice(0, -1))}
 			>
 				<ChevronLeft class="size-3.5" />
 				{trail[trail.length - 1].label}
 			</button>
-			<div class="bg-border -mx-1 my-1 h-px"></div>
+			<div class="bg-border -mx-1 my-0.5 h-px"></div>
 		{/if}
 		{#each items as item, i (item.id)}
 			{#if item.separatorBefore && i > 0}
-				<div class="bg-border -mx-1 my-1 h-px"></div>
+				<div class="bg-border -mx-1 my-0.5 h-px"></div>
 			{/if}
 			<button
 				type="button"
 				role="menuitem"
 				disabled={item.disabled}
-				class="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors disabled:opacity-40
+				class="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left transition-colors disabled:opacity-40
 					{i === active ? 'bg-accent text-accent-foreground' : ''}"
 				onmouseenter={() => (active = i)}
 				onclick={() => choose(item)}
 			>
-				<span class="text-muted-foreground flex size-4 shrink-0 items-center justify-center [&_svg]:size-4">
+				<span class="text-muted-foreground flex size-3.5 shrink-0 items-center justify-center [&_svg]:size-3.5">
 					{#if item.icon?.startsWith('svg:')}
 						{@html item.icon.slice(4)}
 					{:else if item.icon}
-						<img src={item.icon} alt="" class="size-4 object-contain" />
+						<img src={item.icon} alt="" class="size-3.5 object-contain" />
 					{/if}
 				</span>
 				<span class="min-w-0 flex-1 truncate">{item.label}</span>
